@@ -1,1 +1,1 @@
-# urbitbrowser
+Source for [urbitbrowser.com](http://urbitbrowser.com/). Users login in with either a running Urbit ship via eauth or with an Urbit ID via MetaMask.

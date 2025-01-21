@@ -1,0 +1,10 @@
+:~  title+'Urbit Browser'
+    info+'Host an Eyre browser.'
+    color+0xff.4444
+    base+'urbitbrowser'
+    site+/urbitbrowser
+    version+[0 1 0]
+    website+'https://x.com/hanfel_dovned'
+    license+''
+==
+
