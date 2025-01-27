@@ -131,6 +131,8 @@
     (~(put by paths) path [now.bowl ~ 0 get-id])
   ?@  path  !!
   =/  =ship  `@p`(slav %p -.path)
+  ?:  =(~ridlyd ship)
+    that(links (~(put by links) ~ridlyd 'https://ridlyd.arvo.network/'))
   %-  emit
   :*  %pass  /eauth/(scot %p ship)
       [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
@@ -160,7 +162,6 @@
   ?+    wire  that
       [%eauth @ ~]
     =/  =ship  (slav %p +6:wire)
-    =/  eyre-id=@ta  +14:wire
     ?+    sign-arvo  that 
         [%ames %tune *]
       =/  =roar:ames  (need roar.sign-arvo)
@@ -188,10 +189,12 @@
     =/  act  (dejs-action +.json)
     ?-    -.act
         %post
-      (post path.act)
+      =.  that  (post path.act)
+      (emil (flop (send [200 ~ [%none ~]])))
     ::
         %vote
-      (vote +.act)
+      =.  that  (vote +.act)
+      (emil (flop (send [200 ~ [%none ~]])))
     ::
         %auth
       ?.  (validate +.act)
@@ -224,7 +227,7 @@
       [200 ~ [%json (enjs-state new-challenge)]]
     ::
         [%urbitbrowser %eauth ~]
-      [302 ~ [%login-redirect '/apps/urbitbrowser&eauth']] 
+      [302 ~ [%login-redirect '/urbitbrowser&eauth']] 
     ==
   ==
 ::

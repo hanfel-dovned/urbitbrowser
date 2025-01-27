@@ -252,7 +252,13 @@
           const postTitle = document.createElement("a");
           postTitle.className = "postTitle";
           postTitle.textContent = path;
-          postTitle.href = link || "#";
+          
+	  const urlObj = new URL(link);
+	  const domain = urlObj.protocol + "//" + urlObj.host;  // e.g. "http://hanfel-dovned.startram.io"
+	  const finalPath = path.split("/").slice(2).join("/"); // e.g. "blog/hello"
+	  const finalLink = `${domain}/${finalPath}`;           // e.g. "http://hanfel-dovned.startram.io/blog/hello"          
+	  postTitle.href = finalLink || "#";
+          
           postTitle.target = "_blank";
 
           const timestamp = new Date(when).toLocaleString();
