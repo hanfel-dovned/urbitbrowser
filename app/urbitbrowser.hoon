@@ -98,14 +98,6 @@
 ++  watch
   |=  =path
   ^+  that
-  ~&  >>  :-  'path recieved'  path
-  =?    sessions
-      !(~(has by sessions) src.bowl)
-    (~(put by sessions) [src.bowl src.bowl])
-  =/  new-challenge  (sham [now eny]:bowl)
-  =?    challenges
-        =(src.bowl (~(got by sessions) src.bowl))
-      (~(put in challenges) new-challenge)
   ?+    path  that
       [%http-response *]
     that
@@ -243,7 +235,6 @@
     ~&  >  'got response from remote scry'
     =/  =ship  (slav %p +6:wire)
     =/  path  +7:wire
-   :: =/  eyre-id=@ta  +14:wire
     ?+    sign-arvo  that 
         [%ames %tune *]
       =/  =roar:ames  (need roar.sign-arvo)
