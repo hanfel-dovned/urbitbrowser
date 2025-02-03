@@ -79,7 +79,7 @@
 ++  emil  |=(lac=(list card) that(deck (welp lac deck)))
 ++  abet  ^-((quip card _state) [(flop deck) state])
 ::
-++  init
+++  init 
   ^+  that
   %-  emit
   :*  %pass   /eyre/connect   
@@ -98,17 +98,28 @@
 ++  watch
   |=  =path
   ^+  that
+  ~&  >>  :-  'path recieved'  path
+  =?    sessions
+      !(~(has by sessions) src.bowl)
+    (~(put by sessions) [src.bowl src.bowl])
+  =/  new-challenge  (sham [now eny]:bowl)
+  =?    challenges
+        =(src.bowl (~(got by sessions) src.bowl))
+      (~(put in challenges) new-challenge)
   ?+    path  that
       [%http-response *]
+    that
+    ::
+      [%paths ~]
     that
   ==
 :: 
 ++  poke
-  |=  =cage
+  |=  [=mark =vase]
   ^+  that
-  ?+    -.cage  !!
+  ?+  mark  !!
       %handle-http-request
-    (handle-http !<([@ta =inbound-request:eyre] +.cage))
+    (handle-http !<([@ta =inbound-request:eyre] vase))
   ==
 ::
 ::  If eauthed in, use that. 
@@ -124,51 +135,135 @@
 ::
 ::  Add a new path and remote scry the owner's URL.
 ++  post
-  |=  =path
+  |=  [=path tags=(list @t) eyre-id=@ta]
   ^+  that
   ?:  =('comet' (get-rank get-id))  that
-  =.  paths
-    (~(put by paths) path [now.bowl ~ 0 get-id])
+  =/  =meta  [now.bowl ~ 0 get-id tags]
+  =+  send=(cury response:schooner eyre-id)
+  :: if path alredy been shared send message back 
+  ~&  >>>   (~(get by paths) path)
+  ?.  =((~(get by paths) path) ~)
+    ~&  >>>  "{(spud path)} already been published"
+    %-  emil
+    %-  flop  %-  send
+    [206 ~ [%plain "{(spud path)} already been published"]]
   ?@  path  !!
+  =.  paths
+    (~(put by paths) path meta)
   =/  =ship  `@p`(slav %p -.path)
-  %-  emit
-  :*  %pass  /eauth/(scot %p ship)
-      [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
+  ::  For now, remove from production
+  ?:  =(ship our.bowl)  
+    =.  links  (~(put by links) ship 'http://localhost:8080')
+    %-  emil
+    %+  welp 
+      %-  flop  %-  send
+      (ok-post-response path)
+    ~[(update-card path meta 'http://localhost:8080')]
+  %-  emil
+  %+  welp 
+    %-  flop  %-  send
+    (ok-post-response path)
+  :~
+    :*  %pass  (welp /eauth/(scot %p ship) path)
+        [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
+    ==
   ==
 ::
 ::  Count a user's vote.
 ++  vote
-  |=  [=path vote=?]
+  |=  [=path vote=? eyre-id=@ta]
   ^+  that
-  ?:  =('comet' (get-rank get-id))  !!
-  =/  old  (~(got by paths) path)
-  ?<  (~(has by votes.old) get-id)
-  =/  new
-    :*  when.old
-        (~(put by votes.old) get-id vote)
-        ?:(vote (add score.old 1) ?:(=(score.old 0) 0 (sub score.old 1)))
-        submitter.old
+  ?:  =('comet' (get-rank get-id))  
+    ~&  >>>  %crash
+    that
+  =/  link=cord
+    ?.  (~(has by links) `@p`(slav %p -.path))
+      'http://localhost:8080'
+    (~(got by links) `@p`(slav %p -.path))
+  =+  send=(cury response:schooner eyre-id)
+  =+  response=(flop (send ok-vote-response))
+  ::  sending updated vote count to subscriber
+  =/  meta  (~(got by paths) path)
+  ?:  (~(has by votes.meta) get-id)
+    =/  old-vote  (~(got by votes.meta) get-id)
+    ::  if old vote and new vote are matching remove vote
+    ?:  =(vote old-vote)  
+      ~&  >>>  %already-voted-alike
+      =:  votes.meta  (~(del by votes.meta) get-id)
+          score.meta  
+            ?:  vote 
+              (sub score.meta 1)
+            ?:  =(score.meta 0)  0
+            (add score.meta 1)
+      ==
+      =.  paths
+        (~(put by paths) path meta)
+    %-  emil
+    %+  welp 
+      response
+    ~[(update-card path meta link)]
+    ::  if oldVote is %.y and new is %.n
+    ::  overwrite vote and score -2
+    ::  if oldVote is %.n and new is %.y
+    ::  overwrite vote and score +2
+    ~&  %changing-vote
+    =:  votes.meta  (~(put by votes.meta) get-id vote)
+        score.meta 
+          ?:  vote 
+            ?:  =(score.meta 0)  1
+            (add score.meta 2)
+          ?.  (gth score.meta 2)  0
+          (sub score.meta 2)
     ==
+    =.  paths
+      (~(put by paths) path meta)
+    %-  emil
+    %+  welp 
+      response
+    ~[(update-card path meta link)]
+  =:  votes.meta  (~(put by votes.meta) get-id vote)
+      score.meta  
+        ?:  vote  (add score.meta 1) 
+        ?:  =(score.meta 0)  0 
+        (sub score.meta 1)
+  ==
   =.  paths
-    (~(put by paths) path new)
-  that
+    (~(put by paths) path meta)
+  %-  emil
+    %+  welp 
+      response
+  ~[(update-card path meta link)]
 ::
 ::  Receive a link as a remote scry response.
 ++  arvo
   |=  [=wire =sign-arvo]
   ^+  that
   ?+    wire  that
-      [%eauth @ ~]
+      [%eauth @ *]
+    ~&  >  'got response from remote scry'
     =/  =ship  (slav %p +6:wire)
-    =/  eyre-id=@ta  +14:wire
+    =/  path  +7:wire
+   :: =/  eyre-id=@ta  +14:wire
     ?+    sign-arvo  that 
         [%ames %tune *]
       =/  =roar:ames  (need roar.sign-arvo)
       ::  roar is a [dat=[p=/ q=~] syg=~]    
       =/  c=(cask)  (need q.dat.roar)
       ::  c should be a [%cord *]
-      =/  url=@t  (need ;;((unit @t) +.c))
-      that(links (~(put by links) ship url))
+      =/  eauth-url=@t  (need ;;((unit @t) +.c))
+      ::  removing appended /~/eauth from host url
+      =/  url=@t  
+        %-  crip
+        %-  flop  
+        %+  oust  [0 8] 
+        %-  flop  (trip eauth-url)
+      =.  links  (~(put by links) ship url)
+      %-  emit 
+      %:  update-card 
+        path 
+        (~(got by paths) path) 
+        url
+      ==
     ==
   ==
 ::
@@ -185,23 +280,22 @@
       %'POST'
     ?~  body.request.inbound-request  !!
     =/  json  (de:json:html q.u.body.request.inbound-request)
-    =/  act  (dejs-action +.json)
+    =/  act=action  (dejs-action +.json)
+    ~&  [%got-act act]
     ?-    -.act
         %post
-      (post path.act)
+      (post path.act tags.act eyre-id)
     ::
         %vote
-      (vote +.act)
+      (vote path.act vote.act eyre-id)
     ::
         %auth
       ?.  (validate +.act)
         !!
       =.  sessions
         (~(put by sessions) [src.bowl who.act])
-      %-  emil
-      %-  flop
-      %-  send
-      [200 ~ [%html ui]]
+      ~&  >  :-  src.bowl  'authenticated'
+      that
     ==
     ::
       %'GET'
@@ -224,7 +318,7 @@
       [200 ~ [%json (enjs-state new-challenge)]]
     ::
         [%urbitbrowser %eauth ~]
-      [302 ~ [%login-redirect '/apps/urbitbrowser&eauth']] 
+      [302 ~ [%login-redirect '/urbitbrowser&eauth']] 
     ==
   ==
 ::
@@ -234,20 +328,31 @@
   %-  pairs:enjs:format
   :~  [%rank [%s (get-rank get-id)]]
       [%challenge [%s (scot %uv challenge)]]
+      [%patp [%s (scot %p get-id)]]
       :-  %paths
       :-  %a
       %+  turn
         ~(tap by paths)
-      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship]
+      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship tags=(list @t)]
+      =/  json-votes
+        %+  turn
+        ~(tap by votes)
+        |=  [=ship vote=?]
+        %-  pairs:enjs:format
+        :~  [%ship [%s (scot %p ship)]]
+            [%vote [%b vote]] 
+        ==
       %-  pairs:enjs:format
       :~  [%path (path:enjs:format path)]
           [%when (time:enjs:format when)]
+          [%votes [%a json-votes]]
           [%score (numb:enjs:format score)]
           [%submitter [%s (scot %p submitter)]]
+          [%tags [%a (turn tags |=(=cord [%s cord]))]]
       ::
           ?@  path  !!
           =/  =ship  `@p`(slav %p -.path)
-          [%link [%s (~(gut by links) ship 'https://urbit.org')]]
+          [%link [%s (get-url ship path)]]
       ==
   ==
 ::
@@ -257,10 +362,23 @@
   ^-  action
   %.  jon
   %-  of
-  :~  [%post (ot ~[path+pa])]
+  :~  
+      [%post (ot ~[path+pa tags+(ar so)])]
       [%vote (ot ~[path+pa vote+bo])]
       [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
   ==
+::
+++  get-url 
+|=  [=ship =path]
+^-  @t
+=/  url  (~(gut by links) ship 'https://urbit.org')
+?:  =(url 'https://urbit.org')  'https://urbit.org'
+%-  crip 
+%+  welp 
+  %-  trip  
+  url  
+%-  spud
+  (oust [0 1] path)
 ::
 ++  get-rank
   |=  who=@p
@@ -327,4 +445,18 @@
     %gx
     /(scot %p our.bowl)/azimuth/(scot %da now.bowl)/point/(scot %p who)/noun
   ==
+::
+++  update-card 
+  |=  [=path =meta link=cord]
+  ^-  card 
+  ~&  >>>  `update`[%path path meta link]
+  [%give %fact ~[/paths] %ub-update !>(`update`[%path path meta link])]
+::
+++  ok-post-response
+  |=  =path
+  [200 ~ [%plain "Publish {(spud path)} action was successful"]]
+::
+++  ok-vote-response
+  [200 ~ [%plain "Vote action was successful"]]
+::
 --

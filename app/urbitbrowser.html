@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Urbit Browser</title>
+  <script src="https://unpkg.com/@urbit/http-api"></script>
+  <script src="/session.js"></script>
   <style>
     body, html {
       margin: 0;
@@ -56,31 +58,52 @@
       border-radius: 4px;
     }
 
-    #submitSection {
-      display: none;
-      background-color: #fff;
+    #submitSection, 
+    #filterContainer, 
+    #postsContainer, 
+    #errorMessage,
+    #emptyResult {
       margin: 20px auto;
       width: 90%;
       max-width: 800px;
+    }
+
+    #errorMessage{
+      display: none;
+      padding: 10px;
+      background-color: #fff;
+      color: rgb(147, 147, 147);
+      border: 1px solid rgb(218, 153, 153);
+      border-radius: 4px;
+    }
+
+    #submitSection {
+      display: none;
+      background-color: #fff;
       padding: 10px;
       border-radius: 4px;
       border: 1px solid #ccc;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
+    #submitSectionInputPart{
+      display: flex;
+      gap: 5px;
+    }
+
+    #submitSectionTagPart{
+      display: flex;
+      gap: 5px;
+    }
+
     #linkInput {
-      width: 80%;
+      flex-grow: 2;
+      /* width: 80%; */
       padding: 8px;
-      margin-right: 10px;
+      /* margin-right: 10px; */
       border: 1px solid #999;
       border-radius: 4px;
       font-size: 14px;
-    }
-
-    #postsContainer {
-      margin: 20px auto;
-      width: 90%;
-      max-width: 800px;
     }
 
     .post {
@@ -111,11 +134,11 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      gap: 5px;
     }
 
     .postTitle {
       font-size: 18px; /* Increased for visibility */
-      margin-bottom: 5px;
       text-decoration: none;
       color: #0079d3;
     }
@@ -128,6 +151,19 @@
       color: #555;
       font-size: 12px; /* Smaller for metadata */
     }
+
+    #tagsContainer{
+      display: flex;
+      direction: column;
+      gap: 5px;
+    }
+
+    .tag {      
+      padding: 8px 14px;
+      font-size: 14px;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -137,29 +173,75 @@
       <button id="arvoLoginButton" style="display:none;">Arvo Login</button>
       <button id="metaMaskLogInButton" style="display:none;">Azimuth Login</button>
       <div id="metaMaskSection">
-        <input type="text" id="urbitId" placeholder="Enter Urbit ID">
+        <input type="text" id="urbitId" placeholder="Enter Urbit ID"/>
         <button id="signInWithMetaMaskButton">Sign in</button>
       </div>
     </div>
   </header>
 
-  <div id="submitSection">
-    <input type="text" id="linkInput" placeholder="/~sampel-palnet/path">
-    <button id="submitButton">Submit</button>
+  <div id="errorMessage">
+    <button onClick="closeErrorMessage()">x</button>
   </div>
 
+  <div id="submitSection">
+    <div id="submitSectionInputPart">
+      <input type="text" id="linkInput" placeholder="/~sampel-palnet/path">
+      <button id="submitButton">Submit</button>
+    </div>
+    <div id="submitSectionTagPart">
+      <div id="tagsInputContainer" style="display:none;">
+      </div>
+      <button type="button" onclick="addInput()">+</button>
+    </div>
+  </div>
+
+  <div id="filterContainer">
+    <select id="sortFilter">
+      <option value="" disabled selected>Sort by:</option>
+      <option value="top">Top</option>
+      <option value="new">New</option>
+      <option value="old">Old</option>
+    </select>
+    <p>Published by:</p>
+    <input id="searchByPublished" type="text" placeholder="~sampel-palnet"/>
+    <p>Find by tag:</p>
+    <input id="searchByTag" type="text" placeholder="#urbit"/>
+  </div>
+
+  <div id="emptyResult" style="display:none;">Nothing here</div>
   <div id="postsContainer"></div>
 
   <script>
     document.addEventListener("DOMContentLoaded", async function() {
+      let posts = []
       let rank = "comet"; 
       let challenge = "";
+      let urbitId = ""
+      let filter = "top"
+      let searchPostsState = []
+      const api = new UrbitHttpApi.Urbit("");
+      api.ship = window.ship;
+
+      //subscribing for updates to urbitbrowser.hoon
+
+      function pathSub() {
+      window.id = api.subscribe({
+        app: "urbitbrowser",
+        path: "/paths",
+        event: appendSubPost,
+        quit: pathSub,
+        err:()=>{console.log('Subscription fail')}
+      });
+      }
+
+      //  GET req to set state
 
       try {
         const response = await fetch('/urbitbrowser/state');
         const data = await response.json();
 
-        const { paths, challenge: servChallenge, rank: userRank } = data;
+        const { paths, challenge: servChallenge, rank: userRank, patp} = data;
+        urbitId = patp
         rank = userRank;
         challenge = servChallenge;
 
@@ -168,11 +250,13 @@
         } else {
           showSubmissionArea();
         }
-
-        renderPosts(paths);
+        pathSub()
+        sortByPopular(paths, true)
       } catch (err) {
         console.error("Error fetching state:", err);
       }
+
+      // setting html for comet 
 
       function showCometLogin() {
         document.getElementById("arvoLoginButton").style.display = "inline-block";
@@ -189,23 +273,58 @@
         document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
       }
 
+      // setting html for authenticated user
+
       function showSubmissionArea() {
         const submitSection = document.getElementById("submitSection");
-        submitSection.style.display = "block";
+        submitSection.style.display = "flex";
+        submitSection.style.flexDirection = "column"
+        submitSection.style.gap = "5px"
+
 
         document.getElementById("submitButton").addEventListener("click", async () => {
           const linkValue = document.getElementById("linkInput").value.trim();
           if (!linkValue) return;
 
+          const tagsInputs = document.querySelectorAll("#tagsInputContainer .tagsInput");
+
+          console.log('tagsInputs', tagsInputs)
+
+          const tagsArray = Array.from(tagsInputs).map(input => input.value.trim()).filter(value => value !== "");
+
+          //  POST req to create a new post
           try {
             const resp = await fetch('/urbitbrowser', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ post: { path: linkValue } })
+              body: JSON.stringify({ post: { path: linkValue, tags: tagsArray } })
             });
+            console.log(resp)
+            
+            if(resp.status === 200){
+              // clearing up form values
 
-            if (resp.ok) {
-              location.reload();
+              document.getElementById('linkInput').value =''
+              const tags = document.querySelectorAll('.tagsInput');
+              tags.forEach(tag => {
+                tag.remove();
+              });
+            }else if (resp.status === 206) {
+              //  handling err if path already been posted 
+
+              const data = await resp.text();
+
+              errElement = document.getElementById("errorMessage")
+              errElement.style.display = "flex";
+              errElement.style.flexDirection = "column";
+              const oldErrText = document.getElementById('errorText');
+              if (oldErrText) {
+                oldErrText.remove();
+              }
+              const errText = document.createElement("div")
+              errText.id = "errorText"
+              errText.innerHTML = data
+              errElement.appendChild(errText);
             } else {
               alert("Submission failed");
             }
@@ -216,74 +335,153 @@
         });
       }
 
-      function renderPosts(paths) {
+      function appendSubPost(newPost){
+
+        const arr = posts
+        const index = arr.findIndex(obj => {
+          return obj.path === newPost.path;
+        });
+
+        if (index !== -1) {
+          posts[index] = newPost
+
+          // TODO:  if in search mode perhaps check if 
+          // seacrh mode aplicable to newPost and if so display it without reloading every path 
+
+          if(searchPostsState.length != 0){
+            let inputTag = document.getElementById("searchByTag")
+            let inputPath = document.getElementById("searchByPublished")
+            if(inputTag.value != '' & inputPath.value){
+              newPost.tags.include(inputTag.value)
+              newPost.path.startsWith(inputPath.value)
+
+            }
+            renderByFilter(searchPostsState)
+          }else{
+            renderByFilter(posts)
+          }
+        } else {
+          console.log('adding new post', newPost)
+          const errElement = document.getElementById("errorText")
+          console.log('errElement', errElement)
+          if(errElement){
+            closeErrorMessage()
+          }
+          posts.push(newPost);
+          renderPost(newPost)
+        }
+      }
+
+      function renderPost(post){
+  
+        const container = document.getElementById("postsContainer");
+        const { path, when, votes, score, submitter, tags, link } = post;
+  
+        const postEl = document.createElement("div");
+        postEl.className = "post";
+  
+        const voteSection = document.createElement("div");
+        voteSection.className = "voteSection";
+  
+        const upArrow = document.createElement("div");
+        upArrow.className = "voteArrow";
+        upArrow.textContent = "+";
+        upArrow.addEventListener("click", () => voteOnPath(path, true));
+  
+        const scoreEl = document.createElement("div");
+        scoreEl.textContent = score;
+        const downArrow = document.createElement("div");
+        downArrow.className = "voteArrow";
+        downArrow.textContent = "-";
+        downArrow.addEventListener("click", () => voteOnPath(path, false));
+       
+        if(votes){
+          const isVoted = votes.find(element => element.ship === urbitId);
+          //console.log(path, isVoted)
+          if(isVoted && isVoted.vote === true){
+            upArrow.style.fontWeight = 'bold';
+          }
+          if(isVoted && isVoted.vote === false){
+            downArrow.style.fontWeight = 'bold';
+          }
+        }
+
+        voteSection.appendChild(upArrow);
+        voteSection.appendChild(scoreEl);
+        voteSection.appendChild(downArrow);
+  
+        const postContent = document.createElement("div");
+        postContent.className = "postContent";
+        const postTitle = document.createElement("a");
+  
+        postTitle.className = "postTitle";
+        postTitle.textContent = path;
+        postTitle.href = link || "#";
+        postTitle.target = "_blank";
+  
+        const timestamp = new Date(when).toLocaleString();
+        const postInfo = document.createElement("div");
+  
+        postInfo.className = "postInfo";
+        postInfo.textContent = `submitted by ${submitter} on ${timestamp}`;
+  
+        const tagsContainer = document.createElement("div");
+        tagsContainer.id = "tagsContainer"
+        tags.forEach(tag => {
+          const tagContainer = document.createElement("div");
+          tagContainer.className = "tag"
+          tagContainer.innerHTML = tag
+          tagsContainer.appendChild(tagContainer)
+        })
+  
+        postContent.appendChild(postTitle);
+        postContent.appendChild(postInfo);
+        postContent.appendChild(tagsContainer);
+  
+        postEl.appendChild(voteSection);
+        postEl.appendChild(postContent);
+        container.insertBefore(postEl, container.firstChild);
+      }
+
+      function renderPosts(paths, isFetched) {
         const container = document.getElementById("postsContainer");
         container.innerHTML = "";
+        const emptyResult = document.getElementById("emptyResult")
 
-        paths.forEach(item => {
-          const { path, when, score, submitter, link } = item;
-
-          const postEl = document.createElement("div");
-          postEl.className = "post";
-
-          const voteSection = document.createElement("div");
-          voteSection.className = "voteSection";
-
-          const upArrow = document.createElement("div");
-          upArrow.className = "voteArrow";
-          upArrow.textContent = "+";
-          upArrow.addEventListener("click", () => voteOnPath(path, true));
-
-          const scoreEl = document.createElement("div");
-          scoreEl.textContent = score;
-
-          const downArrow = document.createElement("div");
-          downArrow.className = "voteArrow";
-          downArrow.textContent = "-";
-          downArrow.addEventListener("click", () => voteOnPath(path, false));
-
-          voteSection.appendChild(upArrow);
-          voteSection.appendChild(scoreEl);
-          voteSection.appendChild(downArrow);
-
-          const postContent = document.createElement("div");
-          postContent.className = "postContent";
-
-          const postTitle = document.createElement("a");
-          postTitle.className = "postTitle";
-          postTitle.textContent = path;
-          postTitle.href = link || "#";
-          postTitle.target = "_blank";
-
-          const timestamp = new Date(when).toLocaleString();
-          const postInfo = document.createElement("div");
-          postInfo.className = "postInfo";
-          postInfo.textContent = `submitted by ${submitter} on ${timestamp}`;
-
-          postContent.appendChild(postTitle);
-          postContent.appendChild(postInfo);
-
-          postEl.appendChild(voteSection);
-          postEl.appendChild(postContent);
-          container.appendChild(postEl);
-        });
+        if(paths.length === 0){
+          emptyResult.style.display = "block"
+        }else{
+          emptyResult.style.display = "none"
+          if(isFetched){
+            console.log('just fetched data')
+            paths.forEach(post => {
+              posts.push(post);
+              renderPost(post)
+            })
+          }else{
+            paths.forEach(post => {
+              renderPost(post)
+            })
+          }
+        }
       }
+
+      //  POST vote req
 
       async function voteOnPath(path, isUpvote) {
         if (rank === "comet") {
           alert("You must log in to vote.");
           return;
         }
-
         try {
+          console.log(path)
           const resp = await fetch('/urbitbrowser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ vote: { path: path, vote: isUpvote } })
           });
-
           if (resp.ok) {
-            location.reload();
+            console.log('voted')
           } else {
             alert("Vote failed");
           }
@@ -301,20 +499,17 @@
             method: "personal_sign",
             params: [account, challenge],
           });
-
           const body = {
             who: document.getElementById("urbitId").value,
             address: account,
             signature: signature,
             secret: challenge,
           };
-
           const response = await fetch('/urbitbrowser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ auth: body }),
           });
-
           if (response.ok) {
             location.reload();
           } else {
@@ -325,7 +520,132 @@
           alert("An error occurred during MetaMask login. Please try again.");
         }
       }
-    });
+
+      //  sorting functionlaity 
+
+      document.getElementById("sortFilter").addEventListener("change", async () => {
+        // TODO: if search is true run search and render by filter
+        const param = event.target.value;
+        filter = param
+        console.log(searchPostsState.length, searchPostsState)
+        console.log(searchPostsState.length === 0 ? 'posts' : 'searchPostsState')
+        renderByFilter (searchPostsState.length === 0 ? posts : searchPostsState)
+      })
+
+      function renderByFilter(postsArr){
+        if(filter === 'top'){
+          console.log('sorting by popular', postsArr)
+          // sort array by votes 
+          sortByPopular(postsArr, false)
+        }else if(filter ==='new'){
+          const sortedPosts = [...postsArr].sort((a, b) => a.when - b.when);
+          renderPosts(sortedPosts, false)
+        }else if(filter ==='old'){
+          const sortedPosts = [...postsArr].sort((a, b) => b.when - a.when);
+          renderPosts(sortedPosts, false)
+        }
+      }
+
+      function sortByPopular(postsArr, isFetched){
+        // if (!Array.isArray(postsArr) || postsArr.length === 0) {
+        // }
+        const sortedPosts = [...postsArr].sort((a, b) => a.score - b.score);
+        renderPosts(sortedPosts, isFetched)
+      }
+
+      document.getElementById("searchByPublished").addEventListener("input", async () => {
+        let input = document.getElementById("searchByPublished")
+        let inputTag = document.getElementById("searchByTag")
+        let inputValue = input.value;
+
+        if(inputValue === ''){
+          if(inputTag.value === ''){
+            searchPostsState = []
+            renderByFilter(posts)
+          }else{
+            renderPostsByTag(posts, inputTag.value)
+          }
+        }else{
+          if(inputTag.value === ''){
+            const filteredPosts = renderPostBySearch(inputValue)
+            searchPostsState = filteredPosts
+            renderByFilter(filteredPosts)
+          }else{
+            const filteredPosts = renderPostBySearch(inputValue)
+            renderPostsByTag(filteredPosts, inputTag.value)
+          }
+        }
+      })
+
+      document.getElementById("searchByTag").addEventListener("input", async () => {
+        let inputTag = document.getElementById("searchByTag")
+        let inputPath = document.getElementById("searchByPublished")
+        if(inputTag.value === ''){
+          if(inputPath.value === ''){
+            console.log('no filter')
+            searchPostsState = []
+            renderByFilter(posts)
+          }else{
+            console.log('no tag filter')
+            const filteredPosts = renderPostBySearch(inputPath.value)
+            searchPostsState = filteredPosts
+            console.log(filteredPosts)
+            renderByFilter(filteredPosts)
+          }
+        }else{
+          if(inputPath.value === ''){
+            renderPostsByTag(posts, inputTag.value)
+          }else{
+            console.log('double filter through tags', posts)
+            const filteredPosts = renderPostBySearch(inputPath.value)
+            console.log(filteredPosts, inputPath.value)
+            renderPostsByTag(filteredPosts, inputTag.value)
+          }
+        }
+      })
+      
+      function renderPostBySearch(query){
+        if (!query.startsWith('/')) {
+          query = '/' + query;
+        }
+
+        const filteredPosts = posts.filter(post => post.path.startsWith(query));
+        console.log(query, filteredPosts)
+        // Sort the array based on the '/' values (after '/')
+        const sortedPosts = filteredPosts.sort((a, b) => {
+          // Extract the part after the '/' to compare
+          const aValue = a.path.startsWith('/') ? a.path.slice(1) : a;
+          const bValue = b.path.startsWith('/') ? b.path.slice(1) : b;
+          return aValue.localeCompare(bValue);  // Sort alphabetically
+        })
+      return sortedPosts
+
+      }
+      function renderPostsByTag(postsArr, tag){
+        const filteredPosts = postsArr.filter(post => post.tags.includes(tag));
+        searchPostsState = filteredPosts
+        renderByFilter(filteredPosts)
+      }
+    })
+
+    function closeErrorMessage(){
+        errElement = document.getElementById("errorMessage")
+          errElement.style.display = "none";
+          const errText = document.getElementById("errorText")
+          errElement.removeChild(errText)
+    }
+
+    function addInput() {
+      let container = document.getElementById('tagsInputContainer');
+      container.style.display = "flex"
+      container.style.gap = "5px"
+      container.style.flexWrap = "wrap"
+      let newInput = document.createElement('input');
+      newInput.type = "text"
+      newInput.className = "tagsInput"
+      newInput.placeholder = "#tag"
+      container.appendChild(newInput);
+    }
   </script>
 </body>
 </html>
