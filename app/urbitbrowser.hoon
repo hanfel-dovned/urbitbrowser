@@ -130,7 +130,7 @@
   |=  [=path tags=(list @t) eyre-id=@ta]
   ^+  that
   ?:  =('comet' (get-rank get-id))  that
-  =/  =meta  [now.bowl ~ 0 get-id tags]
+  =/  =meta  [now.bowl ~ 0 get-id tags ~]
   =+  send=(cury response:schooner eyre-id)
   :: if path alredy been shared send message back 
   ~&  >>>   (~(get by paths) path)
@@ -168,10 +168,7 @@
   ?:  =('comet' (get-rank get-id))  
     ~&  >>>  %crash
     that
-  =/  link=cord
-    ?.  (~(has by links) `@p`(slav %p -.path))
-      'http://localhost:8080'
-    (~(got by links) `@p`(slav %p -.path))
+  =/  link=cord  (get-link path)
   =+  send=(cury response:schooner eyre-id)
   =+  response=(flop (send ok-vote-response))
   ::  sending updated vote count to subscriber
@@ -225,6 +222,25 @@
     %+  welp 
       response
   ~[(update-card path meta link)]
+::
+++  create-comment
+  |=  [=path text=@t eyre-id=@ta]
+  ^+  that 
+  ?:  =('commet' (get-rank get-id))  that
+  =+  send=(cury response:schooner eyre-id)
+  =/  link=cord  (get-link path)
+  =/  meta  (~(get by paths) path)
+  ?~  meta  that  
+  =.  comments.u.meta  
+    %+  snoc  comments.u.meta 
+    [src.bowl now.bowl text]
+  =.  paths
+    (~(put by paths) path u.meta)
+  %-  emil 
+  %+  welp 
+    %-  flop  %-  send 
+    [200 ~ [%plain "comment action was successful"]]
+  ~[(update-card path u.meta link)]
 ::
 ::  Receive a link as a remote scry response.
 ++  arvo
@@ -280,6 +296,9 @@
         %vote
       (vote path.act vote.act eyre-id)
     ::
+        %comment
+      (create-comment path.act text.act eyre-id)
+    ::
         %auth
       ?.  (validate +.act)
         !!
@@ -324,7 +343,7 @@
       :-  %a
       %+  turn
         ~(tap by paths)
-      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship tags=(list @t)]
+      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship tags=(list @t) comments=(list comment)]
       =/  json-votes
         %+  turn
         ~(tap by votes)
@@ -340,11 +359,21 @@
           [%score (numb:enjs:format score)]
           [%submitter [%s (scot %p submitter)]]
           [%tags [%a (turn tags |=(=cord [%s cord]))]]
+          [%comments [%a (turn comments comment-to-obj)]]
       ::
           ?@  path  !!
           =/  =ship  `@p`(slav %p -.path)
           [%link [%s (get-url ship path)]]
       ==
+  ==
+::
+++  comment-to-obj
+  |=  comment=[who=@p when=@da what=@t]
+  ^-  json
+  %-  pairs:enjs:format
+  :~  [%who [%s (scot %p who.comment)]]
+      [%when (time:enjs:format when.comment)]
+      [%what [%s what.comment]]
   ==
 ::
 ++  dejs-action
@@ -356,6 +385,7 @@
   :~  
       [%post (ot ~[path+pa tags+(ar so)])]
       [%vote (ot ~[path+pa vote+bo])]
+      [%comment (ot ~[path+pa text+so])]
       [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
   ==
 ::
@@ -449,5 +479,12 @@
 ::
 ++  ok-vote-response
   [200 ~ [%plain "Vote action was successful"]]
+::
+++  get-link
+  |=  =path 
+  ^-  cord
+  ?.  (~(has by links) `@p`(slav %p -.path))
+    'http://localhost:8080'
+  (~(got by links) `@p`(slav %p -.path))
 ::
 --

@@ -6,6 +6,12 @@
       score=@ud
       submitter=ship
       tags=(list @t)
+      comments=(list comment)
+  ==
++$  comment
+  $:  who=ship
+      when=@da
+      what=@t
   ==
 +$  secret  @uv
 +$  challenges  (set secret)
@@ -14,11 +20,10 @@
   $%  
       [%post =path tags=(list @t)]
       [%vote =path vote=?]
+      [%comment =path text=@t]
       [%auth who=@p =secret address=tape signature=tape]
   ==
 +$  update 
-  $%  [%rank =cord]
-      [%challenge challenge=@uv]
-      [%path =path =meta link=cord]
+  $%  [%path =path =meta link=cord]
   ==
 --

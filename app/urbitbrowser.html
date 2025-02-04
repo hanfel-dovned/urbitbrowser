@@ -375,7 +375,7 @@
       function renderPost(post){
   
         const container = document.getElementById("postsContainer");
-        const { path, when, votes, score, submitter, tags, link } = post;
+        const { path, when, votes, score, submitter, tags, comments, link } = post;
   
         const postEl = document.createElement("div");
         postEl.className = "post";
@@ -433,10 +433,59 @@
           tagContainer.innerHTML = tag
           tagsContainer.appendChild(tagContainer)
         })
-  
+
+        const commentsButton = document.createElement('button');
+        commentsButton.textContent = `${comments.length} Comments`;
+        commentsButton.className = 'commentsButton';
+
+        const commentsContainer = document.createElement('div');
+        commentsContainer.className = 'commentsContainer';
+        commentsContainer.style.display = 'none';
+
+        const commentForm = `
+          <form id="${path}/commentForm">
+            <input type="text" id="${path}/commentText" placeholder="Write your comment..." required>
+            <button type="submit">Submit</button>
+          </form>
+        `;
+        commentsButton.addEventListener('click', () => {
+          commentsContainer.style.display = 'block';
+          const commentsHTML = comments.map(comment => `
+            <div class="comment">
+              <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
+              <p>${comment.what}</p>
+            </div>
+          `).join('');
+
+          commentsContainer.innerHTML = commentsHTML + commentForm;
+
+          const form = document.getElementById(`${path}/commentForm`);
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const commentText = document.getElementById(`${path}/commentText`).value;
+            console.log('comment input value', commentText)
+
+            try {
+              const resp = await fetch('/urbitbrowser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment: { path: path, text: commentText }})
+              });
+              console.log(resp)
+              if(resp.status === 200){
+                console.log('published a comment')
+              }
+            }catch (error) {
+              console.error("Error submitting post:", error);
+            }
+          })
+        })
+        
         postContent.appendChild(postTitle);
         postContent.appendChild(postInfo);
         postContent.appendChild(tagsContainer);
+        postContent.appendChild(commentsButton);
+        postContent.appendChild(commentsContainer);
   
         postEl.appendChild(voteSection);
         postEl.appendChild(postContent);
