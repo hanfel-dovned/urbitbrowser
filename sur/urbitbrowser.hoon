@@ -5,6 +5,7 @@
       votes=(map ship ?)
       score=@ud
       submitter=ship
+      body=@t
       tags=(list @t)
       comments=(list comment)
   ==
@@ -18,14 +19,14 @@
 +$  sessions  (map comet=@p id=@p)
 +$  action  
   $%  
-      [%post =path tags=(list @t)]
+      [%post =path body=@t tags=(list @t)]
       [%vote =path vote=?]
       [%comment =path text=@t]
       [%auth who=@p =secret address=tape signature=tape]
   ==
 +$  update 
   $%  
-      [%path =path =meta link=cord]
-      [%post =meta]
+      [%path =path =meta link=@t]
+      [%post link=@t =meta]
   ==
 --

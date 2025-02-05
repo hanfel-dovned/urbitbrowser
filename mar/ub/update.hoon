@@ -16,6 +16,7 @@
           [%when (time:enjs:format when.meta)]
           [%score (numb:enjs:format score.meta)]
           [%submitter [%s (scot %p submitter.meta)]]
+          [%body [%s body.meta]]
           [%link [%s +15.upd]]
           [%tags [%a (turn tags.meta |=(=cord [%s cord]))]]
           :-  %comments
@@ -31,11 +32,14 @@
       ==
       ::
         %post
-      =/  =meta  +.upd
+      =/  link  +6.upd
+      =/  =meta  +7.upd
       %-  pairs:enjs:format
       :~  [%when (time:enjs:format when.meta)]
           [%score (numb:enjs:format score.meta)]
           [%submitter [%s (scot %p submitter.meta)]]
+          [%body [%s body.meta]]
+          [%link [%s link]]
           [%tags [%a (turn tags.meta |=(=cord [%s cord]))]]
           :-  %comments
           :-  %a

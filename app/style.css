@@ -56,6 +56,9 @@ button {
 button:hover {
   background-color: #ddd;
 }
+.buttonPadding{
+    padding: 6px;
+}
 input{
   font-family: "Urbit Sans";
   padding: 8px;
@@ -159,7 +162,7 @@ select{
   color: #555;
   font-size: 12px; /* Smaller for metadata */
 }
-#tagsContainer{
+.tagsContainer{
   display: flex;
   direction: column;
   gap: 5px;

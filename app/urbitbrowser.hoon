@@ -115,9 +115,10 @@
       %-  emit
       [%give %kick ~[(welp /post post-path)] ~]
     =/  =meta  (~(got by paths) post-path)
+    =/  link  (get-url post-path)
     ~&   >  meta
     %-  emit
-    [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post meta])]
+    [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post link meta])]
   ==
 :: 
 ++  poke
@@ -141,10 +142,10 @@
 ::
 ::  Add a new path and remote scry the owner's URL.
 ++  post
-  |=  [=path tags=(list @t) eyre-id=@ta]
+  |=  [=path body=cord tags=(list @t) eyre-id=@ta]
   ^+  that
   ?:  =('comet' (get-rank get-id))  that
-  =/  =meta  [now.bowl ~ 0 get-id tags ~]
+  =/  =meta  [now.bowl ~ 0 get-id body tags ~]
   =+  send=(cury response:schooner eyre-id)
   :: if path alredy been shared send message back 
   ~&  >>>   (~(get by paths) path)
@@ -164,7 +165,7 @@
     %+  welp 
       %-  flop  %-  send
       (ok-post-response path)
-    ~[(update-card path meta 'http://localhost:8080')]
+    ~[(update-card path meta (get-url path))]
   %-  emil
   %+  welp 
     %-  flop  %-  send
@@ -179,11 +180,12 @@
 ++  vote
   |=  [=path vote=? eyre-id=@ta]
   ^+  that
-  ?:  =('comet' (get-rank get-id))  
-    ~&  >>>  %crash
-    that
-  =/  link=cord  (get-link path)
   =+  send=(cury response:schooner eyre-id)
+  ?:  =('comet' (get-rank get-id))  
+    %-  emil 
+    %-  flop  %-  send
+    response-403 
+  =/  link=cord  (get-url path)
   =+  response=(flop (send ok-vote-response))
   ::  sending updated vote count to subscriber
   =/  meta  (~(got by paths) path)
@@ -191,7 +193,6 @@
     =/  old-vote  (~(got by votes.meta) get-id)
     ::  if old vote and new vote are matching remove vote
     ?:  =(vote old-vote)  
-      ~&  >>>  %already-voted-alike
       =:  votes.meta  (~(del by votes.meta) get-id)
           score.meta  
             ?:  vote 
@@ -240,9 +241,12 @@
 ++  create-comment
   |=  [=path text=@t eyre-id=@ta]
   ^+  that 
-  ?:  =('commet' (get-rank get-id))  that
   =+  send=(cury response:schooner eyre-id)
-  =/  link=cord  (get-link path)
+  ?:  =('commet' (get-rank get-id))  
+    %-  emil 
+    %-  flop  %-  send
+    response-403 
+  =/  link=cord  (get-url path)
   =/  meta  (~(get by paths) path)
   ?~  meta  that  
   =.  comments.u.meta  
@@ -255,7 +259,7 @@
     %-  flop  %-  send 
     [200 ~ [%plain "comment action was successful"]]
   :~
-    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post u.meta])]
+    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post (get-url path) u.meta])]
   ==
 ::
 ::  Receive a link as a remote scry response.
@@ -307,7 +311,7 @@
     ~&  [%got-act act]
     ?-    -.act
         %post
-      (post path.act tags.act eyre-id)
+      (post path.act body.act tags.act eyre-id)
     ::
         %vote
       (vote path.act vote.act eyre-id)
@@ -369,7 +373,7 @@
       :-  %a
       %+  turn
         ~(tap by paths)
-      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship tags=(list @t) comments=(list comment)]
+      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship body=@t tags=(list @t) comments=(list comment)]
       =/  json-votes
         %+  turn
         ~(tap by votes)
@@ -384,12 +388,12 @@
           [%votes [%a json-votes]]
           [%score (numb:enjs:format score)]
           [%submitter [%s (scot %p submitter)]]
+          [%body [%s body]]
           [%tags [%a (turn tags |=(=cord [%s cord]))]]
           [%comments [%a (turn comments comment-to-obj)]]
       ::
-          ?@  path  !!
-          =/  =ship  `@p`(slav %p -.path)
-          [%link [%s (get-url ship path)]]
+          :: ?@  path  !!
+          [%link [%s (get-url path)]]
       ==
   ==
 ::
@@ -409,23 +413,23 @@
   %.  jon
   %-  of
   :~  
-      [%post (ot ~[path+pa tags+(ar so)])]
+      [%post (ot ~[path+pa body+so tags+(ar so)])]
       [%vote (ot ~[path+pa vote+bo])]
       [%comment (ot ~[path+pa text+so])]
       [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
   ==
 ::
 ++  get-url 
-|=  [=ship =path]
-^-  @t
-=/  url  (~(gut by links) ship 'https://urbit.org')
-?:  =(url 'https://urbit.org')  'https://urbit.org'
-%-  crip 
-%+  welp 
-  %-  trip  
-  url  
-%-  spud
-  (oust [0 1] path)
+  |=  =path
+  ^-  cord
+  =/  ship  `@p`(slav %p -.path)
+  =/  url  (~(gut by links) ship 'https://urbit.org')
+  ?:  =(url 'https://urbit.org')  url
+  %-  crip  %+  welp 
+    %-  trip  
+    url  
+  (spud +.path)
+  :: (oust [0 1] path)
 ::
 ++  get-rank
   |=  who=@p
@@ -506,11 +510,17 @@
 ++  ok-vote-response
   [200 ~ [%plain "Vote action was successful"]]
 ::
-++  get-link
-  |=  =path 
-  ^-  cord
-  ?.  (~(has by links) `@p`(slav %p -.path))
-    'http://localhost:8080'
-  (~(got by links) `@p`(slav %p -.path))
+++  response-403 
+  [403 ~ [%plain "Not authorized: You do not have permission to perform this request."]]
+:: ++  get-link
+::   |=  =path 
+::   ^-  cord
+::   =/  path-end  (spud +.path)
+::   %-  crip  %-  welp 
+::   :_  path-end
+::   ?.  (~(has by links) `@p`(slav %p -.path))
+::     "http://localhost:8080"
+::   %-  trip
+::   (~(got by links) `@p`(slav %p -.path))
 ::
 --

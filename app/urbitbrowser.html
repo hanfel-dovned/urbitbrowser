@@ -26,12 +26,13 @@
   
     <div id="submitSection">
       <h2>Create post</h2>
-      <input type="text" id="linkInput" placeholder="/~sampel-palnet/path">
+      <input type="text" id="linkInput" placeholder="/~sampel-palnet/path" required="true">
       <div id="submitSectionTagPart">
         <div id="tagsInputContainer" style="display:none;">
         </div>
-        <button type="button" onclick="addInput()">Add Tags +</button>
+        <button type="button" onclick="addInput()" class="buttonPadding">Add Tags +</button>
       </div>
+      <input type="text" id="bodyInput" placeholder="Body">
       <div id="submitButtonContainer">
         <button id="submitButton">Submit</button>
       </div>
@@ -133,12 +134,14 @@
 
           const tagsArray = Array.from(tagsInputs).map(input => input.value.trim()).filter(value => value !== "");
 
+          const bodyInput = document.getElementById("bodyInput");
+
           //  POST req to create a new post
           try {
             const resp = await fetch('/urbitbrowser', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ post: { path: linkValue, tags: tagsArray } })
+              body: JSON.stringify({ post: { path: linkValue, body: bodyInput.value, tags: tagsArray } })
             });
             console.log(resp)
             
@@ -150,6 +153,7 @@
               tags.forEach(tag => {
                 tag.remove();
               });
+              bodyInput.value=''
             }else if (resp.status === 206) {
               //  handling err if path already been posted 
 
@@ -266,12 +270,22 @@
         postInfo.textContent = `submitted by ${submitter} on ${timestamp}`;
   
         const tagsContainer = document.createElement("div");
-        tagsContainer.id = "tagsContainer"
+        tagsContainer.className = "tagsContainer"
         tags.forEach(tag => {
-          const tagContainer = document.createElement("div");
-          tagContainer.className = "tag"
-          tagContainer.innerHTML = tag
-          tagsContainer.appendChild(tagContainer)
+          const tagElement = document.createElement("div");
+          tagElement.value = tag
+          tagElement.className = "tag"
+          tagElement.innerHTML = tag
+          tagElement.addEventListener("click", () => {
+            let inputTag = document.getElementById("searchByTag")
+            inputTag.value=tag
+            let inputEvent = new Event('input', {
+               bubbles: true,
+               cancelable: true
+             });
+             inputTag.dispatchEvent(inputEvent);
+          })
+          tagsContainer.appendChild(tagElement)
         })
 
         const commentsButton = document.createElement('button');
@@ -289,38 +303,7 @@
           </form>
         `;
         commentsButton.addEventListener('click', () => {
-          console.log(path)
           window.location.href = `/urbitbrowser/post${path}`;
-          // commentsContainer.style.display = 'block';
-          // const commentsHTML = comments.map(comment => `
-          //   <div class="comment">
-          //     <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
-          //     <p>${comment.what}</p>
-          //   </div>
-          // `).join('');
-
-          // commentsContainer.innerHTML = commentsHTML + commentForm;
-
-          // const form = document.getElementById(`${path}/commentForm`);
-          // form.addEventListener('submit', async (e) => {
-          //   e.preventDefault()
-          //   const commentText = document.getElementById(`${path}/commentText`).value;
-          //   console.log('comment input value', commentText)
-
-          //   try {
-          //     const resp = await fetch('/urbitbrowser', {
-          //       method: 'POST',
-          //       headers: { 'Content-Type': 'application/json' },
-          //       body: JSON.stringify({ comment: { path: path, text: commentText }})
-          //     });
-          //     console.log(resp)
-          //     if(resp.status === 200){
-          //       console.log('published a comment')
-          //     }
-          //   }catch (error) {
-          //     console.error("Error submitting post:", error);
-          //   }
-          // })
         })
         
         postContent.appendChild(postTitle);
@@ -437,9 +420,8 @@
         }
       }
 
+      //  isFetched - stands for initial fetch of state/first rendering
       function sortByPopular(postsArr, isFetched){
-        // if (!Array.isArray(postsArr) || postsArr.length === 0) {
-        // }
         const sortedPosts = [...postsArr].sort((a, b) => a.score - b.score);
         renderPosts(sortedPosts, isFetched)
       }
