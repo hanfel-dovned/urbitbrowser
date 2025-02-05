@@ -1,6 +1,8 @@
 /-  *urbitbrowser
 /+  dbug, default-agent, server, schooner, ethereum, naive
 /*  ui  %html  /app/urbitbrowser/html
+/*  ui-post  %html  /app/post/html
+/*  css  %css  /app/style/css
 ::
 |%
 +$  versioned-state  $%(state-0)
@@ -104,6 +106,18 @@
     ::
       [%paths ~]
     that
+    ::
+      [%post *]
+    =/  post-path  +:path
+    ~&  >  post-path 
+    ?~  (~(get by paths) post-path)  
+    ~&  >>>  %kick
+      %-  emit
+      [%give %kick ~[(welp /post post-path)] ~]
+    =/  =meta  (~(got by paths) post-path)
+    ~&   >  meta
+    %-  emit
+    [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post meta])]
   ==
 :: 
 ++  poke
@@ -240,7 +254,9 @@
   %+  welp 
     %-  flop  %-  send 
     [200 ~ [%plain "comment action was successful"]]
-  ~[(update-card path u.meta link)]
+  :~
+    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post u.meta])]
+  ==
 ::
 ::  Receive a link as a remote scry response.
 ++  arvo
@@ -318,17 +334,27 @@
     =?    challenges
         =(src.bowl (~(got by sessions) src.bowl))
       (~(put in challenges) new-challenge)
+    ~&  >>  site
     %-  emil  %-  flop  %-  send
     ?+    site  [404 ~ [%plain "404 - Not Found"]]
     ::
         [%urbitbrowser ~]
       [200 ~ [%html ui]]
     ::
+        [%urbitbrowser %style ~]
+      [200 ~[['content-type'^'text/css']] [%plain (trip css)]]
+    ::
         [%urbitbrowser %state ~]
       [200 ~ [%json (enjs-state new-challenge)]]
     ::
         [%urbitbrowser %eauth ~]
       [302 ~ [%login-redirect '/urbitbrowser&eauth']] 
+    ::
+        [%urbitbrowser %post *]
+      =/  path  ;;(path +7:site)
+      =/  in-paths  (~(get by paths) path)
+      ?~  in-paths  [200 ~ [%redirect '/urbitbrowser']]
+      [200 ~ [%html ui-post]]
     ==
   ==
 ::

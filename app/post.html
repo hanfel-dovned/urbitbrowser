@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Urbit Browser</title>
+  <script src="https://unpkg.com/@urbit/http-api"></script>
+  <script src="/session.js"></script>
+  <link rel="stylesheet" href="/urbitbrowser/style.css">
+</head>
+<body>
+  <header>
+    <a id="title" href="/urbitbrowser">UrbitBrowser</a>
+    <div id="loginButtons">
+      <button id="arvoLoginButton" style="display:none;">Arvo Login</button>
+      <button id="metaMaskLogInButton" style="display:none;">Azimuth Login</button>
+      <div id="metaMaskSection" style="display:none;">
+        <input type="text" id="urbitId" placeholder="Enter Urbit ID"/>
+        <button id="signInWithMetaMaskButton">Sign in</button>
+      </div>
+    </div>
+  </header>
+  
+  <main>
+  <div id="postContainer" class="container"></div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async function() {
+      let post = {}
+      const api = new UrbitHttpApi.Urbit("");
+      api.ship = window.ship;
+      const urlPath = window.location.pathname;
+      const path = urlPath.substring(urlPath.indexOf('/', 1))
+  
+      function postSub() {
+
+        window.id = api.subscribe({
+          app: "urbitbrowser",
+          path: path,
+          event: renderPost,
+          quit: postSub,
+          err:()=>{console.log('Subscription fail')}
+        });
+      }
+      try{
+        console.log('rank', Rank())
+        if (Rank() === "comet") {
+          console.log('commet')
+          showCometLogin();
+        }
+
+        postSub()
+      }catch(err){
+        console.error("Error fetching state:", err);
+      }
+
+      function showCometLogin() {
+        document.getElementById("arvoLoginButton").style.display = "inline-block";
+        document.getElementById("metaMaskLogInButton").style.display = "inline-block";
+
+        document.getElementById("arvoLoginButton").addEventListener("click", function() {
+          window.location.href = '/urbitbrowser/eauth';
+        });
+
+        document.getElementById("metaMaskLogInButton").addEventListener("click", function() {
+          document.getElementById("metaMaskSection").style.display = "inline-block";
+        });
+
+        document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
+      }
+
+      function renderPost(postUpdate){
+        post = postUpdate
+        console.log(postUpdate)
+        const postPath = path.substring(path.indexOf('/', 1))
+
+        const { when, votes, score, submitter, tags, comments } = postUpdate;
+        
+        const container = document.getElementById("postContainer")
+        
+        container.innerHTML = ''
+
+        const timestamp = new Date(when).toLocaleString();
+        const containerHeader = document.createElement("div")
+        containerHeader.id = 'containerHeader'
+        containerHeader.className = 'post'
+        const containerPost = document.createElement("div")
+        containerPost.id = 'containerPost'
+        containerPost.className = 'postContent'
+        const containerPostHTML = 
+        `
+          <a class="postTitle">${postPath}</a>
+          <p class="postInfo">submitted by: ${submitter} on ${timestamp}</p>
+        `
+        containerPost.innerHTML = containerPostHTML
+
+        const voteSection = document.createElement("div")
+        voteSection.className = "voteSection"
+        const scoreEl = document.createElement("div")
+        scoreEl.innerHTML = score
+        const upArrow = document.createElement("div");
+        upArrow.className = "voteArrow";
+        upArrow.textContent = "+";
+        upArrow.addEventListener("click", () => voteOnPath(postPath, true));
+
+        const downArrow = document.createElement("div");
+        downArrow.className = "voteArrow";
+        downArrow.textContent = "-";
+        downArrow.addEventListener("click", () => voteOnPath(postPath, false));
+
+        if(votes){
+          const isVoted = votes.find(element => element.ship === UrbitId());
+          if(isVoted && isVoted.vote === true){
+            upArrow.style.fontWeight = 'bold';
+          }
+          if(isVoted && isVoted.vote === false){
+            downArrow.style.fontWeight = 'bold';
+          }
+        }
+
+        voteSection.appendChild(upArrow);
+        voteSection.appendChild(scoreEl);
+        voteSection.appendChild(downArrow);
+        containerHeader.append(voteSection);
+        containerHeader.append(containerPost);
+        container.append(containerHeader);
+
+        const commentsContainer = document.createElement('div');
+        commentsContainer.className = 'commentsContainer'
+
+        let commentsReverse = comments.reverse()
+
+        const commentsHTML = commentsReverse.map(comment => `
+            <div class="comment">
+              <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
+              <p>${comment.what}</p>
+            </div>
+          `).join('');
+          
+          if(Rank() === 'comet'){
+            commentsContainer.innerHTML = commentsHTML
+          }else{
+            const commentForm = `
+              <form id="commentForm" class="container">
+                <input type="text" id="commentText" placeholder="Write your comment..." required>
+                <button type="submit">Submit</button>
+              </form>
+            `;
+
+            commentsContainer.innerHTML = commentForm + commentsHTML 
+
+            setTimeout(() => {
+              const form = document.getElementById('commentForm');
+              if(form) {
+
+              form.addEventListener('submit', async (e) => {
+                console.log('submitting form')
+                e.preventDefault()
+                const commentText = document.getElementById(`commentText`).value;
+                console.log('comment input value', commentText)
+    
+                try {
+                  const resp = await fetch('/urbitbrowser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment: { path: postPath, text: commentText }})
+                  });
+                  console.log(resp)
+                  if(resp.status === 200){
+                    console.log('published a comment')
+                  }
+                }catch (error) {
+                  console.error("Error submitting post:", error);
+                  }
+                })
+              }
+            }, 0)
+          }
+
+        container.append(commentsContainer)
+      }
+    })
+    function Challenge(){
+      return JSON.parse(localStorage.getItem('challenge'))
+    }
+    function UrbitId(){
+      return JSON.parse(localStorage.getItem('urbitId'))
+    }
+    function Rank(){
+      return JSON.parse(localStorage.getItem('rank'))
+    }
+  </script>
+</body>
+</html>

@@ -4,167 +4,7 @@
   <title>Urbit Browser</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
   <script src="/session.js"></script>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      background-color: #f6f7f8;
-      font-family: Arial, sans-serif;
-    }
-
-    header {
-      background-color: #fff;
-      border-bottom: 1px solid #ccc;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    #title {
-      font-size: 1.5rem;
-      color: #333;
-      text-decoration: none;
-    }
-
-    #loginButtons {
-      display: flex;
-      gap: 10px;
-    }
-
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-      font-size: 14px;
-      border: 1px solid #333;
-      border-radius: 4px;
-      background-color: #fff;
-    }
-
-    button:hover {
-      background-color: #ddd;
-    }
-
-    #metaMaskSection {
-      display: none;
-      margin-right: 20px;
-    }
-
-    #urbitId {
-      margin-right: 10px;
-      padding: 5px;
-      border: 1px solid #999;
-      border-radius: 4px;
-    }
-
-    #submitSection, 
-    #filterContainer, 
-    #postsContainer, 
-    #errorMessage,
-    #emptyResult {
-      margin: 20px auto;
-      width: 90%;
-      max-width: 800px;
-    }
-
-    #errorMessage{
-      display: none;
-      padding: 10px;
-      background-color: #fff;
-      color: rgb(147, 147, 147);
-      border: 1px solid rgb(218, 153, 153);
-      border-radius: 4px;
-    }
-
-    #submitSection {
-      display: none;
-      background-color: #fff;
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    #submitSectionInputPart{
-      display: flex;
-      gap: 5px;
-    }
-
-    #submitSectionTagPart{
-      display: flex;
-      gap: 5px;
-    }
-
-    #linkInput {
-      flex-grow: 2;
-      /* width: 80%; */
-      padding: 8px;
-      /* margin-right: 10px; */
-      border: 1px solid #999;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-
-    .post {
-      display: flex;
-      background-color: #fff;
-      margin-bottom: 10px;
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .voteSection {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      margin-right: 10px;
-    }
-
-    .voteArrow {
-      cursor: pointer;
-      margin: 4px 0;
-      font-size: 20px;
-    }
-
-    .postContent {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 5px;
-    }
-
-    .postTitle {
-      font-size: 18px; /* Increased for visibility */
-      text-decoration: none;
-      color: #0079d3;
-    }
-
-    .postTitle:hover {
-      text-decoration: underline;
-    }
-
-    .postInfo {
-      color: #555;
-      font-size: 12px; /* Smaller for metadata */
-    }
-
-    #tagsContainer{
-      display: flex;
-      direction: column;
-      gap: 5px;
-    }
-
-    .tag {      
-      padding: 8px 14px;
-      font-size: 14px;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-  </style>
+  <link rel="stylesheet" type="text/css" href="/urbitbrowser/style.css"/>
 </head>
 <body>
   <header>
@@ -178,45 +18,45 @@
       </div>
     </div>
   </header>
-
-  <div id="errorMessage">
-    <button onClick="closeErrorMessage()">x</button>
-  </div>
-
-  <div id="submitSection">
-    <div id="submitSectionInputPart">
+  
+  <main>
+    <div id="errorMessage">
+      <button onClick="closeErrorMessage()">x</button>
+    </div>
+  
+    <div id="submitSection">
+      <h2>Create post</h2>
       <input type="text" id="linkInput" placeholder="/~sampel-palnet/path">
-      <button id="submitButton">Submit</button>
-    </div>
-    <div id="submitSectionTagPart">
-      <div id="tagsInputContainer" style="display:none;">
+      <div id="submitSectionTagPart">
+        <div id="tagsInputContainer" style="display:none;">
+        </div>
+        <button type="button" onclick="addInput()">Add Tags +</button>
       </div>
-      <button type="button" onclick="addInput()">+</button>
+      <div id="submitButtonContainer">
+        <button id="submitButton">Submit</button>
+      </div>
     </div>
-  </div>
-
-  <div id="filterContainer">
-    <select id="sortFilter">
-      <option value="" disabled selected>Sort by:</option>
-      <option value="top">Top</option>
-      <option value="new">New</option>
-      <option value="old">Old</option>
-    </select>
-    <p>Published by:</p>
-    <input id="searchByPublished" type="text" placeholder="~sampel-palnet"/>
-    <p>Find by tag:</p>
-    <input id="searchByTag" type="text" placeholder="#urbit"/>
-  </div>
-
-  <div id="emptyResult" style="display:none;">Nothing here</div>
-  <div id="postsContainer"></div>
+  
+    <p class="underlineText">Filters</p>
+    <div id="filterContainer">
+      <select id="sortFilter">
+        <option value="" disabled selected>Sort by:</option>
+        <option value="top">Top</option>
+        <option value="new">New</option>
+        <option value="old">Old</option>
+      </select>
+      <input id="searchByPublished" type="text" placeholder="~sampel-palnet"/>
+      <input id="searchByTag" type="text" placeholder="#urbit"/>
+    </div>
+  
+    <div id="emptyResult" style="display:none;">Nothing here</div>
+    <div id="postsContainer"></div>
+  </main>
 
   <script>
     document.addEventListener("DOMContentLoaded", async function() {
       let posts = []
-      let rank = "comet"; 
-      let challenge = "";
-      let urbitId = ""
+      localStorage.setItem('rank', JSON.stringify('commet'));
       let filter = "top"
       let searchPostsState = []
       const api = new UrbitHttpApi.Urbit("");
@@ -241,11 +81,12 @@
         const data = await response.json();
 
         const { paths, challenge: servChallenge, rank: userRank, patp} = data;
-        urbitId = patp
-        rank = userRank;
+        localStorage.setItem('challenge', JSON.stringify(servChallenge));
+        localStorage.setItem('rank', JSON.stringify(userRank));
+        localStorage.setItem('urbitId', JSON.stringify(patp));
         challenge = servChallenge;
 
-        if (rank === "comet") {
+        if (userRank === "comet") {
           showCometLogin();
         } else {
           showSubmissionArea();
@@ -396,8 +237,7 @@
         downArrow.addEventListener("click", () => voteOnPath(path, false));
        
         if(votes){
-          const isVoted = votes.find(element => element.ship === urbitId);
-          //console.log(path, isVoted)
+          const isVoted = votes.find(element => element.ship === UrbitId());
           if(isVoted && isVoted.vote === true){
             upArrow.style.fontWeight = 'bold';
           }
@@ -449,36 +289,38 @@
           </form>
         `;
         commentsButton.addEventListener('click', () => {
-          commentsContainer.style.display = 'block';
-          const commentsHTML = comments.map(comment => `
-            <div class="comment">
-              <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
-              <p>${comment.what}</p>
-            </div>
-          `).join('');
+          console.log(path)
+          window.location.href = `/urbitbrowser/post${path}`;
+          // commentsContainer.style.display = 'block';
+          // const commentsHTML = comments.map(comment => `
+          //   <div class="comment">
+          //     <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
+          //     <p>${comment.what}</p>
+          //   </div>
+          // `).join('');
 
-          commentsContainer.innerHTML = commentsHTML + commentForm;
+          // commentsContainer.innerHTML = commentsHTML + commentForm;
 
-          const form = document.getElementById(`${path}/commentForm`);
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault()
-            const commentText = document.getElementById(`${path}/commentText`).value;
-            console.log('comment input value', commentText)
+          // const form = document.getElementById(`${path}/commentForm`);
+          // form.addEventListener('submit', async (e) => {
+          //   e.preventDefault()
+          //   const commentText = document.getElementById(`${path}/commentText`).value;
+          //   console.log('comment input value', commentText)
 
-            try {
-              const resp = await fetch('/urbitbrowser', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ comment: { path: path, text: commentText }})
-              });
-              console.log(resp)
-              if(resp.status === 200){
-                console.log('published a comment')
-              }
-            }catch (error) {
-              console.error("Error submitting post:", error);
-            }
-          })
+          //   try {
+          //     const resp = await fetch('/urbitbrowser', {
+          //       method: 'POST',
+          //       headers: { 'Content-Type': 'application/json' },
+          //       body: JSON.stringify({ comment: { path: path, text: commentText }})
+          //     });
+          //     console.log(resp)
+          //     if(resp.status === 200){
+          //       console.log('published a comment')
+          //     }
+          //   }catch (error) {
+          //     console.error("Error submitting post:", error);
+          //   }
+          // })
         })
         
         postContent.appendChild(postTitle);
@@ -518,7 +360,7 @@
       //  POST vote req
 
       async function voteOnPath(path, isUpvote) {
-        if (rank === "comet") {
+        if (Rank() === "comet") {
           alert("You must log in to vote.");
           return;
         }
@@ -546,13 +388,13 @@
           const account = accounts[0];
           const signature = await window.ethereum.request({
             method: "personal_sign",
-            params: [account, challenge],
+            params: [account, Challenge()],
           });
           const body = {
             who: document.getElementById("urbitId").value,
             address: account,
             signature: signature,
-            secret: challenge,
+            secret: Challenge(),
           };
           const response = await fetch('/urbitbrowser', {
             method: 'POST',
@@ -677,6 +519,15 @@
       }
     })
 
+    function Challenge(){
+      return JSON.parse(localStorage.getItem('challenge'))
+    }
+    function UrbitId(){
+      return JSON.parse(localStorage.getItem('urbitId'))
+    }
+    function Rank(){
+      return JSON.parse(localStorage.getItem('rank'))
+    }
     function closeErrorMessage(){
         errElement = document.getElementById("errorMessage")
           errElement.style.display = "none";

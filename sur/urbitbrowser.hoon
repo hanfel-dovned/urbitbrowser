@@ -24,6 +24,8 @@
       [%auth who=@p =secret address=tape signature=tape]
   ==
 +$  update 
-  $%  [%path =path =meta link=cord]
+  $%  
+      [%path =path =meta link=cord]
+      [%post =meta]
   ==
 --
