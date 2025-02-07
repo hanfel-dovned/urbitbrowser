@@ -204,6 +204,16 @@
               <a href="./urbitbrowser/post${linkValue}" style="color: red;">${data}</a>
               `
               errElement.appendChild(postLink)
+            }else if (resp.status === 400 ) {
+              const data = await resp.text();
+
+              errElement.style.display = "flex";
+              if (oldErrText) {
+                oldErrText.remove();
+              }
+              const errText = createDiv('errorText')
+              errText.innerHTML = data
+              errElement.appendChild(errText);
             } else {
               console.error("Submission failed");
             }
@@ -573,6 +583,7 @@
       newInput.className = "tagsInput"
       newInput.placeholder = "#tag"
       container.appendChild(newInput);
+      newInput.focus();
     }
   </script>
 </body>

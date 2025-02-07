@@ -65,6 +65,7 @@ input, textarea{
 }
 input:focus, textarea:focus{
     border: 1px solid #ffffff;
+    outline: none;
 }
 textarea{
     resize: none;

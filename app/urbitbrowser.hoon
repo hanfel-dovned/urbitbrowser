@@ -1,5 +1,5 @@
 /-  *urbitbrowser
-/+  dbug, default-agent, server, schooner, ethereum, naive
+/+  dbug, default-agent, server, schooner, ethereum, naive, *ub-json
 /*  ui  %html  /app/urbitbrowser/html
 /*  ui-post  %html  /app/post/html
 /*  css  %css  /app/style/css
@@ -169,20 +169,20 @@
   ?~  (~(get by links) ship)
     ::  sending request to eauth to get valid url for ship
     %-  emil
-    %+  welp 
-      %-  flop  %-  send
-      (ok-post-response path)
+    :: %+  welp 
+    ::   %-  flop  %-  send
+    ::   (ok-post-response path)
     :~
-      :*  %pass  (welp /eauth/(scot %p ship) path)
+      :*  %pass  (welp /eauth/[eyre-id]/(scot %p ship) path)
           [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
       ==
     ==
   ::  making GET request to url
   %-  emil
-  %+  welp 
-    %-  flop  %-  send
-    (ok-post-response path)
-  ~[(get-req-card path)]
+  :: %+  welp 
+  ::   %-  flop  %-  send
+  ::   (ok-post-response path)
+  ~[(get-req-card eyre-id path)]
 ::
 ::  Count a user's vote.
 ++  vote
@@ -275,10 +275,10 @@
   |=  [=wire =sign-arvo]
   ^+  that
   ?+    wire  that
-      [%eauth @ *]
-    ~&  >  'got response from remote scry'
-    =/  =ship  (slav %p +6:wire)
-    =/  path  +7:wire
+      [%eauth @ta @ *]
+    =/  eyre-id=@ta  +6:wire
+    =/  =ship  (slav %p +14:wire)
+    =/  path  +15:wire
     ?+    sign-arvo  that 
         [%ames %tune *]
       =/  =roar:ames  (need roar.sign-arvo)
@@ -292,29 +292,37 @@
         %-  flop  
         %+  oust  [0 8] 
         %-  flop  (trip eauth-url)
+      ~&  >  :-  'got response from remote scry'
+      :-  ship  url
       =.  links  (~(put by links) ship url)
       %-  emit 
-      (get-req-card path)
+      (get-req-card eyre-id path)
     ==
-    ::  response from GET request to path url 
-      [%http-req *]
+    ::  response from GET request to specified URL path
+    ::  used to verify the public accessibility of the URL
+      [%http-req @ *]
     ?+    sign-arvo  that 
         [%iris %http-response *]
       ~&  client-response.sign-arvo
       =/  response  client-response.sign-arvo
       ?+   -.response  that
           %finished
-        =/  path  +.wire
-        ~&  response-header.response
+        =/  eyre-id  +6.wire
+        =+  send=(cury response:schooner eyre-id)
+        =/  path  +7.wire
         ?:  =(status-code.response-header.response 200)    
           =/  =meta  (~(got by paths) path)
           =/  url  (get-url path)
-          %-  emit
-          (update-card path meta url)
+          %-  emil
+          %+  welp 
+            %-  flop  %-  send
+            (ok-post-response path)
+          ~[(update-card path meta url)]
         ::  if response anything other than 200 remove from paths
-        ~&  >>>  %failed
         =.  paths  (~(del by paths) path)
-        that
+        %-  emil
+        %-  flop  %-  send
+        [400 ~ [%plain "{(spud path)} provided URL is invalid or not publicly accessible."]]
       ==
     ==
   ==
@@ -405,30 +413,13 @@
       [%patp [%s (scot %p get-id)]]
       :-  %paths
       :-  %a
-      %+  turn
+      %+  murn
         ~(tap by paths)
-      |=  [=path when=@da votes=(map ship ?) score=@ud submitter=ship body=@t tags=(list @t) comments=(list comment)]
-      =/  json-votes
-        %+  turn
-        ~(tap by votes)
-        |=  [=ship vote=?]
-        %-  pairs:enjs:format
-        :~  [%ship [%s (scot %p ship)]]
-            [%vote [%b vote]] 
-        ==
-      %-  pairs:enjs:format
-      :~  [%path (path:enjs:format path)]
-          [%when (time:enjs:format when)]
-          [%votes [%a json-votes]]
-          [%score (numb:enjs:format score)]
-          [%submitter [%s (scot %p submitter)]]
-          [%body [%s body]]
-          [%tags [%a (turn tags |=(=cord [%s cord]))]]
-          [%comments [%a (turn comments comment-to-obj)]]
-      ::
-          :: ?@  path  !!
-          [%link [%s (get-url path)]]
-      ==
+      |=  [=path =meta]
+      =/  url  (get-url path)
+      ?:  =(url 'https://urbit.org')  ~
+      %-  some
+      (enjs-path path meta url)
   ==
 ::
 ++  comment-to-obj
@@ -540,11 +531,11 @@
 :: makes GET request to provided url to determine it's public accessibility
 ::
 ++  get-req-card
-  |=  =path
+  |=  [eyre-id=@ta =path]
   ^-  card
   =/  =request:http  [%'GET' (get-url path) ~ ~]
   =/  =task:iris  [%request request *outbound-config:iris]
-  [%pass (welp /http-req path) %arvo %i task]
+  [%pass (welp /http-req/[eyre-id] path) %arvo %i task]
 ::
 ++  ok-post-response
   |=  =path
