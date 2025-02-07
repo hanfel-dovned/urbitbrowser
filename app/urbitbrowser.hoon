@@ -150,9 +150,7 @@
     %-  flop  %-  send
     response-403 
   :: if path alredy been shared send message back 
-  ~&  >>>   (~(get by paths) path)
   ?.  =((~(get by paths) path) ~)
-    ~&  >>>  "{(spud path)} already been published"
     %-  emil
     %-  flop  %-  send
     [206 ~ [%plain "{(spud path)} already been published"]]
@@ -179,20 +177,12 @@
           [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
       ==
     ==
-  =/  url  (get-url path)
+  ::  making GET request to url
   %-  emil
   %+  welp 
     %-  flop  %-  send
     (ok-post-response path)
-  ~[(update-card path meta url)]
-  ::  For now, remove from production
-  :: ?:  =(ship our.bowl)  
-  ::   =.  links  (~(put by links) ship 'http://localhost:8080')
-  ::   %-  emil
-  ::   %+  welp 
-  ::     %-  flop  %-  send
-  ::     (ok-post-response path)
-  ::   ~[(update-card path meta (get-url path))]
+  ~[(get-req-card path)]
 ::
 ::  Count a user's vote.
 ++  vote
@@ -304,10 +294,27 @@
         %-  flop  (trip eauth-url)
       =.  links  (~(put by links) ship url)
       %-  emit 
-      %:  update-card 
-        path 
-        (~(got by paths) path) 
-        url
+      (get-req-card path)
+    ==
+    ::  response from GET request to path url 
+      [%http-req *]
+    ?+    sign-arvo  that 
+        [%iris %http-response *]
+      ~&  client-response.sign-arvo
+      =/  response  client-response.sign-arvo
+      ?+   -.response  that
+          %finished
+        =/  path  +.wire
+        ~&  response-header.response
+        ?:  =(status-code.response-header.response 200)    
+          =/  =meta  (~(got by paths) path)
+          =/  url  (get-url path)
+          %-  emit
+          (update-card path meta url)
+        ::  if response anything other than 200 remove from paths
+        ~&  >>>  %failed
+        =.  paths  (~(del by paths) path)
+        that
       ==
     ==
   ==
@@ -529,6 +536,15 @@
   ^-  card 
   ~&  >>>  `update`[%path path meta link]
   [%give %fact ~[/paths] %ub-update !>(`update`[%path path meta link])]
+::
+:: makes GET request to provided url to determine it's public accessibility
+::
+++  get-req-card
+  |=  =path
+  ^-  card
+  =/  =request:http  [%'GET' (get-url path) ~ ~]
+  =/  =task:iris  [%request request *outbound-config:iris]
+  [%pass (welp /http-req path) %arvo %i task]
 ::
 ++  ok-post-response
   |=  =path
