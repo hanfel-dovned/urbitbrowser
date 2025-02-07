@@ -20,20 +20,19 @@
   </header>
   
   <main>
-    <div id="errorMessage">
-      <button onClick="closeErrorMessage()">x</button>
-    </div>
   
     <div id="submitSection">
       <h2>Create post</h2>
       <input type="text" id="linkInput" placeholder="/~sampel-palnet/path" required="true">
       <div id="submitSectionTagPart">
+        <button type="button" onclick="addInput()" class="buttonPadding">Add Tags +</button>
         <div id="tagsInputContainer" style="display:none;">
         </div>
-        <button type="button" onclick="addInput()" class="buttonPadding">Add Tags +</button>
       </div>
-      <input type="text" id="bodyInput" placeholder="Body">
+      <textarea type="text" id="bodyInput" placeholder="Body"></textarea>
       <div id="submitButtonContainer">
+        <div id="errorMessage">
+        </div>
         <button id="submitButton">Submit</button>
       </div>
     </div>
@@ -45,6 +44,7 @@
         <option value="top">Top</option>
         <option value="new">New</option>
         <option value="old">Old</option>
+        <option value="activity">Activity</option>
       </select>
       <input id="searchByPublished" type="text" placeholder="~sampel-palnet"/>
       <input id="searchByTag" type="text" placeholder="#urbit"/>
@@ -54,7 +54,9 @@
     <div id="postsContainer"></div>
   </main>
 
-  <script>
+  <script type="module">
+  import ob from 'https://cdn.skypack.dev/urbit-ob';
+
     document.addEventListener("DOMContentLoaded", async function() {
       let posts = []
       localStorage.setItem('rank', JSON.stringify('commet'));
@@ -80,6 +82,7 @@
       try {
         const response = await fetch('/urbitbrowser/state');
         const data = await response.json();
+        let challenge;
 
         const { paths, challenge: servChallenge, rank: userRank, patp} = data;
         localStorage.setItem('challenge', JSON.stringify(servChallenge));
@@ -115,6 +118,19 @@
         document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
       }
 
+      //  Function that verifies whether the given path contains a valid patp
+
+      function validPatp (path){
+        const withoutFirstSlash = path.startsWith('/') ? path.slice(1) : path;
+        const shipName = withoutFirstSlash.split('/')[0];
+        console.log('ship name', shipName)
+  
+        const isValid = ob.isValidPatp(shipName)
+        console.log('isValid?', isValid)
+
+        return isValid
+      }
+
       // setting html for authenticated user
 
       function showSubmissionArea() {
@@ -126,7 +142,22 @@
 
         document.getElementById("submitButton").addEventListener("click", async () => {
           const linkValue = document.getElementById("linkInput").value.trim();
+          const errElement = document.getElementById("errorMessage")
+          const oldErrText = document.getElementById('errorText');
+
+          const validPath = validPatp(linkValue)
           if (!linkValue) return;
+          if (!validPath) {
+            console.log('patp isnt valid')
+            errElement.style.display = "flex";
+            if (oldErrText) {
+              oldErrText.remove();
+            }
+            const errText = createDiv('errorText')
+            errText.innerHTML = "The provided @p in the path is invalid."
+            errElement.appendChild(errText);
+            return
+          }
 
           const tagsInputs = document.querySelectorAll("#tagsInputContainer .tagsInput");
 
@@ -147,6 +178,11 @@
             
             if(resp.status === 200){
               // clearing up form values
+              console.log('old error text', oldErrText)
+              if (oldErrText) {
+              errElement.style.display = "none";
+              oldErrText.remove();
+            }
 
               document.getElementById('linkInput').value =''
               const tags = document.querySelectorAll('.tagsInput');
@@ -159,23 +195,20 @@
 
               const data = await resp.text();
 
-              errElement = document.getElementById("errorMessage")
               errElement.style.display = "flex";
-              errElement.style.flexDirection = "column";
-              const oldErrText = document.getElementById('errorText');
               if (oldErrText) {
                 oldErrText.remove();
               }
-              const errText = document.createElement("div")
-              errText.id = "errorText"
-              errText.innerHTML = data
-              errElement.appendChild(errText);
+              const postLink = createDiv('postLink')
+              postLink.innerHTML = `
+              <a href="./urbitbrowser/post${linkValue}" style="color: red;">${data}</a>
+              `
+              errElement.appendChild(postLink)
             } else {
-              alert("Submission failed");
+              console.error("Submission failed");
             }
           } catch (error) {
             console.error("Error submitting post:", error);
-            alert("Submission error");
           }
         });
       }
@@ -188,10 +221,7 @@
         });
 
         if (index !== -1) {
-          posts[index] = newPost
-
-          // TODO:  if in search mode perhaps check if 
-          // seacrh mode aplicable to newPost and if so display it without reloading every path 
+          posts[index] = newPost 
 
           if(searchPostsState.length != 0){
             let inputTag = document.getElementById("searchByTag")
@@ -220,26 +250,36 @@
       function renderPost(post){
   
         const container = document.getElementById("postsContainer");
+
         const { path, when, votes, score, submitter, tags, comments, link } = post;
   
-        const postEl = document.createElement("div");
+        const postEl = createDiv('')
         postEl.className = "post";
+        postEl.addEventListener('click', (event) => {
+          window.location.href = `/urbitbrowser/post${path}`;
+        })
   
-        const voteSection = document.createElement("div");
+        const voteSection = createDiv('')
         voteSection.className = "voteSection";
   
-        const upArrow = document.createElement("div");
+        const upArrow = createDiv('')
         upArrow.className = "voteArrow";
         upArrow.textContent = "+";
-        upArrow.addEventListener("click", () => voteOnPath(path, true));
+        upArrow.addEventListener("click", (event) => {
+          event.stopPropagation()
+          voteOnPath(path, true)
+        });
   
-        const scoreEl = document.createElement("div");
+        const scoreEl = createDiv('')
         scoreEl.textContent = score;
-        const downArrow = document.createElement("div");
+        const downArrow = createDiv('')
         downArrow.className = "voteArrow";
         downArrow.textContent = "-";
-        downArrow.addEventListener("click", () => voteOnPath(path, false));
-       
+        downArrow.addEventListener("click", (event) => {
+          event.stopPropagation()
+          voteOnPath(path, false)
+        });
+      
         if(votes){
           const isVoted = votes.find(element => element.ship === UrbitId());
           if(isVoted && isVoted.vote === true){
@@ -254,7 +294,7 @@
         voteSection.appendChild(scoreEl);
         voteSection.appendChild(downArrow);
   
-        const postContent = document.createElement("div");
+        const postContent = createDiv('')
         postContent.className = "postContent";
         const postTitle = document.createElement("a");
   
@@ -262,21 +302,25 @@
         postTitle.textContent = path;
         postTitle.href = link || "#";
         postTitle.target = "_blank";
+        postTitle.addEventListener("click", (event) =>
+        event.stopPropagation()
+      )
   
         const timestamp = new Date(when).toLocaleString();
-        const postInfo = document.createElement("div");
+        const postInfo = createDiv('')
   
         postInfo.className = "postInfo";
-        postInfo.textContent = `submitted by ${submitter} on ${timestamp}`;
+        const postText = createDiv()
+        postText.innerHTML = `Submitted by ${submitter} <span class="separator">|</span> ${comments.length} Comments <span class="separator">|</span> ${timestamp}`;
   
-        const tagsContainer = document.createElement("div");
+        const tagsContainer = createDiv('')
         tagsContainer.className = "tagsContainer"
         tags.forEach(tag => {
-          const tagElement = document.createElement("div");
-          tagElement.value = tag
+          const tagElement = document.createElement('button');
           tagElement.className = "tag"
           tagElement.innerHTML = tag
-          tagElement.addEventListener("click", () => {
+          tagElement.addEventListener("click", (event) => {
+            event.stopPropagation()
             let inputTag = document.getElementById("searchByTag")
             inputTag.value=tag
             let inputEvent = new Event('input', {
@@ -285,32 +329,18 @@
              });
              inputTag.dispatchEvent(inputEvent);
           })
+
+          const separator = document.createElement('span')
+          separator.className = 'separator'
+          separator.innerText = '|'
+          tagsContainer.appendChild(separator)
           tagsContainer.appendChild(tagElement)
         })
-
-        const commentsButton = document.createElement('button');
-        commentsButton.textContent = `${comments.length} Comments`;
-        commentsButton.className = 'commentsButton';
-
-        const commentsContainer = document.createElement('div');
-        commentsContainer.className = 'commentsContainer';
-        commentsContainer.style.display = 'none';
-
-        const commentForm = `
-          <form id="${path}/commentForm">
-            <input type="text" id="${path}/commentText" placeholder="Write your comment..." required>
-            <button type="submit">Submit</button>
-          </form>
-        `;
-        commentsButton.addEventListener('click', () => {
-          window.location.href = `/urbitbrowser/post${path}`;
-        })
+        postInfo.appendChild(postText)
+        postInfo.appendChild(tagsContainer);
         
         postContent.appendChild(postTitle);
         postContent.appendChild(postInfo);
-        postContent.appendChild(tagsContainer);
-        postContent.appendChild(commentsButton);
-        postContent.appendChild(commentsContainer);
   
         postEl.appendChild(voteSection);
         postEl.appendChild(postContent);
@@ -344,6 +374,7 @@
 
       async function voteOnPath(path, isUpvote) {
         if (Rank() === "comet") {
+          //  TODO: add login pop up
           alert("You must log in to vote.");
           return;
         }
@@ -357,11 +388,10 @@
           if (resp.ok) {
             console.log('voted')
           } else {
-            alert("Vote failed");
+            console.error('vote failed')
           }
         } catch (err) {
           console.error("Error sending vote:", err);
-          alert("Vote error");
         }
       }
 
@@ -398,7 +428,6 @@
       //  sorting functionlaity 
 
       document.getElementById("sortFilter").addEventListener("change", async () => {
-        // TODO: if search is true run search and render by filter
         const param = event.target.value;
         filter = param
         console.log(searchPostsState.length, searchPostsState)
@@ -416,6 +445,15 @@
           renderPosts(sortedPosts, false)
         }else if(filter ==='old'){
           const sortedPosts = [...postsArr].sort((a, b) => b.when - a.when);
+          renderPosts(sortedPosts, false)
+        }else if(filter = 'activity'){
+          const sortedPosts = postsArr.sort((a, b) => {
+            const latestCommentA = a.comments.length > 0 ? Math.max(...a.comments.map(comment => comment.when)) : -Infinity;
+            const latestCommentB = b.comments.length > 0 ? Math.max(...b.comments.map(comment => comment.when)) : -Infinity;
+            console.log(latestCommentB - latestCommentA)
+            return latestCommentA - latestCommentB;
+           });
+          console.log('sorted', sortedPosts)
           renderPosts(sortedPosts, false)
         }
       }
@@ -510,11 +548,19 @@
     function Rank(){
       return JSON.parse(localStorage.getItem('rank'))
     }
+    function createDiv(idValue){
+      const div = document.createElement('div');
+      div.id = idValue
+      return div
+    }
+
+  </script>
+  <script>
     function closeErrorMessage(){
-        errElement = document.getElementById("errorMessage")
-          errElement.style.display = "none";
-          const errText = document.getElementById("errorText")
-          errElement.removeChild(errText)
+      const errElement = document.getElementById("errorMessage")
+      errElement.style.display = "none";
+      const errText = document.getElementById("errorText")
+      errElement.removeChild(errText)
     }
 
     function addInput() {

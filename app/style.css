@@ -11,17 +11,13 @@ body, html {
   padding: 0;
   background-color: #000000;
   color:#fff;
-  /* background-color: #f6f7f8; */
   font-family: "Urbit Sans";
 }
 header {
-  /* background-color: #fff; */
-  /* border-bottom: 1px solid #ccc; */
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  /* box-shadow: 0 1px 3px rgba(0,0,0,0.1); */
 }
 main{
   margin: 20px auto;
@@ -49,7 +45,6 @@ button {
   font-size: 17px;
   border: 1px solid #333;
   border-radius: 4px;
-  /* background-color: #fff; */
   background-color: #363636;
   color: white;
 }
@@ -59,18 +54,21 @@ button:hover {
 .buttonPadding{
     padding: 6px;
 }
-input{
+input, textarea{
   font-family: "Urbit Sans";
   padding: 8px;
-  /* border: 1px solid #999; */
   border-radius: 4px;
   font-size: 14px;
   background-color: #000000;
   color:rgb(255, 255, 255);
   border: 1px solid #363636;
 }
-input:focus{
+input:focus, textarea:focus{
     border: 1px solid #ffffff;
+}
+textarea{
+    resize: none;
+    height: 120px;
 }
 select, option{
     font-family: "Urbit Sans";
@@ -82,6 +80,9 @@ select{
     border: 1px solid #363636;
     border-radius: 4px;
     font-size: 14px;
+}
+h2{
+   margin-bottom: 0;
 }
 #metaMaskSection {
   display: none;
@@ -95,26 +96,23 @@ select{
 }
 #errorMessage{
   display: none;
-  padding: 10px;
-  background-color: #fff;
-  color: rgb(147, 147, 147);
-  border: 1px solid rgb(218, 153, 153);
-  border-radius: 4px;
+  color: red;
+  padding-left: 10px;
 }
 #submitSection {
   display: none;
-  /* background-color: #fff; */
   padding: 10px;
-  /* border-radius: 4px; */
-  /* border: 1px solid #ccc; */
-  /* box-shadow: 0 1px 3px rgba(0,0,0,0.1); */
 }
 #submitSectionTagPart{
   display: flex;
   gap: 5px;
 }
 #submitButtonContainer{
-    text-align: right;
+    display: flex;
+    flex-direction: row;
+}
+#submitButton{
+    margin-left: auto;
 }
 #linkInput {
   flex-grow: 2;
@@ -126,11 +124,13 @@ select{
 .post, .comment {
   display: flex;
   background-color: #0F0F0E;
-  /* background-color: #fff; */
   margin-bottom: 10px;
   padding: 10px;
   border-radius: 4px;
   border: 1px solid #0F0F0E;
+}
+.post{
+    cursor: pointer;
 }
 .voteSection {
   display: flex;
@@ -159,16 +159,25 @@ select{
   text-decoration: underline;
 }
 .postInfo {
-  color: #555;
+  color: #b5b5b5;
   font-size: 12px; /* Smaller for metadata */
+  display: flex;
+  align-items: baseline;
 }
+.separator {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin: 0 5px;
+  }
+  
 .tagsContainer{
   display: flex;
   direction: column;
-  gap: 5px;
+  /* gap: 5px; */
+  /* pointer-events: none; */
 }
 .tag {      
-  padding: 8px 14px;
+  /* padding: 8px 14px; */
   font-size: 14px;
   border: 1px solid #333;
   border-radius: 4px;
@@ -176,6 +185,8 @@ select{
 .underlineText{
     display: inline-block;
     border-bottom: 1px solid #363636;
+    margin-bottom: 0;
+    padding-left: 5px;
 }
 /* post.html */
 #containerHeader{

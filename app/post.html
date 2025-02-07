@@ -73,7 +73,7 @@
         console.log(postUpdate)
         const postPath = path.substring(path.indexOf('/', 1))
 
-        const { when, votes, score, submitter, tags, comments } = postUpdate;
+        const { when, votes, score, submitter, body, link, tags, comments } = postUpdate;
         
         const container = document.getElementById("postContainer")
         
@@ -88,10 +88,15 @@
         containerPost.className = 'postContent'
         const containerPostHTML = 
         `
-          <a class="postTitle">${postPath}</a>
+          <a class="postTitle" href=${link}>${postPath}</a>
           <p class="postInfo">submitted by: ${submitter} on ${timestamp}</p>
         `
         containerPost.innerHTML = containerPostHTML
+        if(body != ''){
+          const bodyElement = document.createElement("div")
+          bodyElement.innerHTML = body
+          containerPost.append(bodyElement)
+        }
 
         const voteSection = document.createElement("div")
         voteSection.className = "voteSection"
@@ -177,6 +182,30 @@
           }
 
         container.append(commentsContainer)
+      }
+
+      async function voteOnPath(path, isUpvote) {
+        if (Rank() === "comet") {
+          //  TODO: add login pop up
+          alert("You must log in to vote.");
+          return;
+        }
+        try {
+          console.log(path)
+          const resp = await fetch('/urbitbrowser', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vote: { path: path, vote: isUpvote } })
+          });
+          if (resp.ok) {
+            console.log('voted')
+          } else {
+            alert("Vote failed");
+          }
+        } catch (err) {
+          console.error("Error sending vote:", err);
+          alert("Vote error");
+        }
       }
     })
     function Challenge(){

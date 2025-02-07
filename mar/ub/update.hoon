@@ -23,7 +23,6 @@
           :-  %a
           %+  turn  comments.meta
           |=  =comment
-            ~&  comment
             %-  pairs:enjs:format
             :~  [%who [%s (scot %p who.comment)]]
                 [%when (time:enjs:format when.comment)]

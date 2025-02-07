@@ -144,9 +144,11 @@
 ++  post
   |=  [=path body=cord tags=(list @t) eyre-id=@ta]
   ^+  that
-  ?:  =('comet' (get-rank get-id))  that
-  =/  =meta  [now.bowl ~ 0 get-id body tags ~]
   =+  send=(cury response:schooner eyre-id)
+  ?:  =('comet' (get-rank get-id))  
+    %-  emil 
+    %-  flop  %-  send
+    response-403 
   :: if path alredy been shared send message back 
   ~&  >>>   (~(get by paths) path)
   ?.  =((~(get by paths) path) ~)
@@ -154,27 +156,43 @@
     %-  emil
     %-  flop  %-  send
     [206 ~ [%plain "{(spud path)} already been published"]]
+  ::  ???
   ?@  path  !!
+  ::
+  ?~  (slaw %p -.path)
+    %-  emil
+    %-  flop  %-  send
+    [400 ~ [%plain "{(spud path)} expected to start with valid @p"]]
+  ::
+  =/  =meta  [now.bowl ~ 0 get-id body tags ~]
   =.  paths
     (~(put by paths) path meta)
   =/  =ship  `@p`(slav %p -.path)
-  ::  For now, remove from production
-  ?:  =(ship our.bowl)  
-    =.  links  (~(put by links) ship 'http://localhost:8080')
+  ?~  (~(get by links) ship)
+    ::  sending request to eauth to get valid url for ship
     %-  emil
     %+  welp 
       %-  flop  %-  send
       (ok-post-response path)
-    ~[(update-card path meta (get-url path))]
+    :~
+      :*  %pass  (welp /eauth/(scot %p ship) path)
+          [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
+      ==
+    ==
+  =/  url  (get-url path)
   %-  emil
   %+  welp 
     %-  flop  %-  send
     (ok-post-response path)
-  :~
-    :*  %pass  (welp /eauth/(scot %p ship) path)
-        [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
-    ==
-  ==
+  ~[(update-card path meta url)]
+  ::  For now, remove from production
+  :: ?:  =(ship our.bowl)  
+  ::   =.  links  (~(put by links) ship 'http://localhost:8080')
+  ::   %-  emil
+  ::   %+  welp 
+  ::     %-  flop  %-  send
+  ::     (ok-post-response path)
+  ::   ~[(update-card path meta (get-url path))]
 ::
 ::  Count a user's vote.
 ++  vote
@@ -308,12 +326,12 @@
     ?~  body.request.inbound-request  !!
     =/  json  (de:json:html q.u.body.request.inbound-request)
     =/  act=action  (dejs-action +.json)
-    ~&  [%got-act act]
     ?-    -.act
         %post
       (post path.act body.act tags.act eyre-id)
     ::
         %vote
+      ~&  (~(get by (malt header-list.request.inbound-request)) 'referer')
       (vote path.act vote.act eyre-id)
     ::
         %comment
@@ -335,28 +353,37 @@
         !(~(has by sessions) src.bowl)
       (~(put by sessions) [src.bowl src.bowl])
     =/  new-challenge  (sham [now eny]:bowl)
-    =?    challenges
+    =?  challenges
         =(src.bowl (~(got by sessions) src.bowl))
       (~(put in challenges) new-challenge)
     ~&  >>  site
-    %-  emil  %-  flop  %-  send
-    ?+    site  [404 ~ [%plain "404 - Not Found"]]
+    ?+    site  
+      %-  emil  %-  flop  %-  send
+      [404 ~ [%plain "404 - Not Found"]]
     ::
         [%urbitbrowser ~]
+      %-  emil  %-  flop  %-  send
       [200 ~ [%html ui]]
     ::
         [%urbitbrowser %style ~]
-      [200 ~[['content-type'^'text/css']] [%plain (trip css)]]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'text/css']~
+      `(as-octs:mimes:html css)
     ::
         [%urbitbrowser %state ~]
+      %-  emil  %-  flop  %-  send
       [200 ~ [%json (enjs-state new-challenge)]]
     ::
         [%urbitbrowser %eauth ~]
+      %-  emil  %-  flop  %-  send
       [302 ~ [%login-redirect '/urbitbrowser&eauth']] 
     ::
         [%urbitbrowser %post *]
       =/  path  ;;(path +7:site)
       =/  in-paths  (~(get by paths) path)
+      %-  emil  %-  flop  %-  send
       ?~  in-paths  [200 ~ [%redirect '/urbitbrowser']]
       [200 ~ [%html ui-post]]
     ==
@@ -512,15 +539,4 @@
 ::
 ++  response-403 
   [403 ~ [%plain "Not authorized: You do not have permission to perform this request."]]
-:: ++  get-link
-::   |=  =path 
-::   ^-  cord
-::   =/  path-end  (spud +.path)
-::   %-  crip  %-  welp 
-::   :_  path-end
-::   ?.  (~(has by links) `@p`(slav %p -.path))
-::     "http://localhost:8080"
-::   %-  trip
-::   (~(got by links) `@p`(slav %p -.path))
-::
 --
