@@ -10,6 +10,7 @@
   <header>
     <a id="title" href="#">UrbitBrowser</a>
     <div id="loginButtons">
+      <button id="logOut" tyle="display:none;">Log out</button>
       <button id="arvoLoginButton" style="display:none;">Arvo Login</button>
       <button id="metaMaskLogInButton" style="display:none;">Azimuth Login</button>
       <div id="metaMaskSection">
@@ -25,8 +26,8 @@
       <h2>Create post</h2>
       <input type="text" id="linkInput" placeholder="/~sampel-palnet/path" required="true">
       <div id="submitSectionTagPart">
-        <button type="button" onclick="addInput()" class="buttonPadding">Add Tags +</button>
-        <div id="tagsInputContainer" style="display:none;">
+        <div id="tagsInputContainer">
+        <button type="button" id="addTags" onclick="addInput()" class="buttonPadding">Add Tags +</button>
         </div>
       </div>
       <textarea type="text" id="bodyInput" placeholder="Body"></textarea>
@@ -39,15 +40,18 @@
   
     <p class="underlineText">Filters</p>
     <div id="filterContainer">
-      <select id="sortFilter">
-        <option value="" disabled selected>Sort by:</option>
-        <option value="top">Top</option>
-        <option value="new">New</option>
-        <option value="old">Old</option>
-        <option value="activity">Activity</option>
-      </select>
+      <div id="sortFilter">
+        <button id="selectTrigger" value="">Sort by:</button>
+        <div id="selectArea">
+          <div class="selectOption" value="top">Top</div>
+          <div class="selectOption" value="new">New</div>
+          <div class="selectOption" value="old">Old</div>
+          <div class="selectOption" value="activity">Active</div>
+        </div>
+      </div>
       <input id="searchByPublished" type="text" placeholder="~sampel-palnet"/>
-      <input id="searchByTag" type="text" placeholder="#urbit"/>
+      <div id = "searchQueryContainer"></div>
+      <button id="clearAll">Clear All</button>
     </div>
   
     <div id="emptyResult" style="display:none;">Nothing here</div>
@@ -61,6 +65,8 @@
       let posts = []
       localStorage.setItem('rank', JSON.stringify('commet'));
       let filter = "top"
+      let searchPaths = []
+      let searchTags = []
       let searchPostsState = []
       const api = new UrbitHttpApi.Urbit("");
       api.ship = window.ship;
@@ -95,6 +101,7 @@
         } else {
           showSubmissionArea();
         }
+        renderDropdown()
         pathSub()
         sortByPopular(paths, true)
       } catch (err) {
@@ -134,6 +141,10 @@
       // setting html for authenticated user
 
       function showSubmissionArea() {
+        let logOut = document.getElementById("logOut")
+        logOut.style.display = "inline-block";
+
+
         const submitSection = document.getElementById("submitSection");
         submitSection.style.display = "flex";
         submitSection.style.flexDirection = "column"
@@ -159,11 +170,9 @@
             return
           }
 
-          const tagsInputs = document.querySelectorAll("#tagsInputContainer .tagsInput");
+          const tags = document.querySelectorAll("#tagsInputContainer .newTag");
 
-          console.log('tagsInputs', tagsInputs)
-
-          const tagsArray = Array.from(tagsInputs).map(input => input.value.trim()).filter(value => value !== "");
+          const tagsArray = Array.from(tags).map(tag => tag.dataset.value.trim()).filter(value => value !== "");
 
           const bodyInput = document.getElementById("bodyInput");
 
@@ -239,16 +248,18 @@
             if(inputTag.value != '' & inputPath.value){
               newPost.tags.include(inputTag.value)
               newPost.path.startsWith(inputPath.value)
-
             }
             renderByFilter(searchPostsState)
+
           }else{
             renderByFilter(posts)
           }
+
         } else {
           console.log('adding new post', newPost)
           const errElement = document.getElementById("errorText")
           console.log('errElement', errElement)
+
           if(errElement){
             closeErrorMessage()
           }
@@ -334,10 +345,10 @@
             let inputTag = document.getElementById("searchByTag")
             inputTag.value=tag
             let inputEvent = new Event('input', {
-               bubbles: true,
-               cancelable: true
-             });
-             inputTag.dispatchEvent(inputEvent);
+              bubbles: true,
+              cancelable: true
+            });
+            inputTag.dispatchEvent(inputEvent);
           })
 
           const separator = document.createElement('span')
@@ -435,15 +446,37 @@
         }
       }
 
-      //  sorting functionlaity 
+      //  Custom filter dropdown logic
 
-      document.getElementById("sortFilter").addEventListener("change", async () => {
-        const param = event.target.value;
-        filter = param
-        console.log(searchPostsState.length, searchPostsState)
-        console.log(searchPostsState.length === 0 ? 'posts' : 'searchPostsState')
-        renderByFilter (searchPostsState.length === 0 ? posts : searchPostsState)
-      })
+      function renderDropdown() {
+        const select = document.getElementById('sortFilter');
+        const trigger = document.getElementById('selectTrigger');
+        const options = document.getElementById('selectArea');
+        const optionItems = select.querySelectorAll('.selectOption');
+
+        trigger.addEventListener('click', (event) => {
+          event.stopPropagation()
+          options.classList.toggle('open');
+        });
+  
+        optionItems.forEach(option => {
+          option.addEventListener('click', (event) => {
+            trigger.textContent = option.textContent;
+
+            filter = option.getAttribute('value')
+            renderByFilter (searchPostsState.length === 0 ? posts : searchPostsState)
+
+            options.classList.remove('open');
+            event.stopPropagation();
+          });
+        });
+
+        document.addEventListener('click', (event) => {
+          if (options.classList.contains('open')) {
+            options.classList.remove('open');
+          }
+        })
+      }
 
       function renderByFilter(postsArr){
         if(filter === 'top'){
@@ -474,63 +507,104 @@
         renderPosts(sortedPosts, isFetched)
       }
 
-      document.getElementById("searchByPublished").addEventListener("input", async () => {
-        let input = document.getElementById("searchByPublished")
-        let inputTag = document.getElementById("searchByTag")
-        let inputValue = input.value;
+      document.getElementById("searchByPublished").addEventListener("keydown", async () => {
+        if (event.key === "Enter") {
+          let container = document.getElementById("searchQueryContainer")
+          let input = document.getElementById("searchByPublished")
+          let inputValue = input.value;
+          input.value = ''
+          document.getElementById('clearAll').classList.add('open');
 
-        if(inputValue === ''){
-          if(inputTag.value === ''){
-            searchPostsState = []
-            renderByFilter(posts)
+          //  add new search element to div 
+          let searchElem = createDiv('')
+          let XButton = document.createElement('button');
+          XButton.innerText = "x"
+          XButton.addEventListener("click", () => {
+            searchElem.remove();
+            searchPaths = searchPaths.filter(item => item !== inputValue);
+            searchTags = searchTags.filter(item => item !== inputValue);
+            //  TODO:  rerenderPosts
+          })
+
+          if (inputValue.startsWith('/~') || inputValue.startsWith('~')) {
+            console.log('search by path')
+            if(inputValue.startsWith('~')){
+              searchElem.innerHTML = `<div>/${inputValue}</div>`
+              inputValue = '/' + inputValue
+            }else{
+              searchElem.innerHTML = `<div>${inputValue}</div>`
+            }
+            if (searchPaths.includes(inputValue)) return;
+            //  value is a path 
+            if(searchPaths.length == 0 && searchTags.length == 0){
+              //  if filter by path and tag are empty 
+              //  render through main posts array
+              console.log('if filter by path and tag are empty')
+              const filteredPosts = getPostBySearch(posts, inputValue)
+              searchPostsState = filteredPosts
+              renderByFilter(filteredPosts)
+            }else{
+              //  if has tags search through searchPostsState
+              if(searchTags.length != 0 && searchPaths.length == 0){
+                console.log('has tags search through searchPostsState')
+                const filteredPosts = getPostBySearch(searchPostsState, inputValue)
+                searchPostsState = filteredPosts
+                renderByFilter(filteredPosts)
+              }else if(searchPaths.length != 0){
+                const filteredPosts = getPostBySearch(posts, inputValue)
+                console.log('filtered posts', filteredPosts)
+                let postsArr = filteredPosts
+                if(searchTags.length != 0){
+                  searchTags.forEach(tag => {
+                    postsArr = filterByTag(postsArr, tag);
+                  });
+                }
+                let mergedPosts = [...new Set([...searchPostsState, ...postsArr])];
+                renderByFilter(mergedPosts)
+              }
+            }
+            //  add to array of filteredByPath 
+            searchPaths.push(inputValue)
+            //  else render through filtered array
           }else{
-            renderPostsByTag(posts, inputTag.value)
+            if(inputValue.startsWith('#')){
+              searchElem.innerHTML = `<div>${inputValue}</div>`
+              inputValue = inputValue.slice(1)
+              console.log('inputValue', inputValue)
+            }else{
+              searchElem.innerHTML = `<div>#${inputValue}</div>`
+            }
+            if(searchTags.includes(inputValue)) return;
+            console.log('search by tag')
+            console.log(searchPaths)
+            console.log(searchTags)
+            //  value is a tag
+            if(searchPaths.length != 0 || searchTags.length != 0){
+              console.log('through searchPostsState')
+              renderPostsByTag(searchPostsState, inputValue)
+            }else{
+              console.log('through all posts')
+              renderPostsByTag(posts, inputValue)
+            }
+            //  add to array of filteredByTag
+            searchTags.push(inputValue)
           }
-        }else{
-          if(inputTag.value === ''){
-            const filteredPosts = renderPostBySearch(inputValue)
-            searchPostsState = filteredPosts
-            renderByFilter(filteredPosts)
-          }else{
-            const filteredPosts = renderPostBySearch(inputValue)
-            renderPostsByTag(filteredPosts, inputTag.value)
-          }
+          searchElem.appendChild(XButton)
+          container.append(searchElem)
         }
       })
 
-      document.getElementById("searchByTag").addEventListener("input", async () => {
-        let inputTag = document.getElementById("searchByTag")
-        let inputPath = document.getElementById("searchByPublished")
-        if(inputTag.value === ''){
-          if(inputPath.value === ''){
-            console.log('no filter')
-            searchPostsState = []
-            renderByFilter(posts)
-          }else{
-            console.log('no tag filter')
-            const filteredPosts = renderPostBySearch(inputPath.value)
-            searchPostsState = filteredPosts
-            console.log(filteredPosts)
-            renderByFilter(filteredPosts)
-          }
-        }else{
-          if(inputPath.value === ''){
-            renderPostsByTag(posts, inputTag.value)
-          }else{
-            console.log('double filter through tags', posts)
-            const filteredPosts = renderPostBySearch(inputPath.value)
-            console.log(filteredPosts, inputPath.value)
-            renderPostsByTag(filteredPosts, inputTag.value)
-          }
-        }
+      document.getElementById('clearAll').addEventListener("click", () => {
+        let searchPaths = []
+        let searchTags = []
+        let searchPostsState = []
+        renderByFilter(posts)
+        document.getElementById('searchQueryContainer').innerHTML = ''
+        document.getElementById('clearAll').classList.remove('open');
       })
       
-      function renderPostBySearch(query){
-        if (!query.startsWith('/')) {
-          query = '/' + query;
-        }
-
-        const filteredPosts = posts.filter(post => post.path.startsWith(query));
+      function getPostBySearch(postsArr, query){
+        const filteredPosts = postsArr.filter(post => post.path.startsWith(query));
         console.log(query, filteredPosts)
         // Sort the array based on the '/' values (after '/')
         const sortedPosts = filteredPosts.sort((a, b) => {
@@ -540,14 +614,18 @@
           return aValue.localeCompare(bValue);  // Sort alphabetically
         })
       return sortedPosts
-
       }
+
       function renderPostsByTag(postsArr, tag){
-        const filteredPosts = postsArr.filter(post => post.tags.includes(tag));
+        const filteredPosts = filterByTag(postsArr, tag)
         searchPostsState = filteredPosts
         renderByFilter(filteredPosts)
       }
     })
+
+    function filterByTag(postsArr, tag){
+      return postsArr.filter(post => post.tags.includes(tag));
+    }
 
     function Challenge(){
       return JSON.parse(localStorage.getItem('challenge'))
@@ -574,16 +652,41 @@
     }
 
     function addInput() {
+      let button = document.getElementById('addTags');
+      button.style.display = "none"
       let container = document.getElementById('tagsInputContainer');
       container.style.display = "flex"
       container.style.gap = "5px"
       container.style.flexWrap = "wrap"
-      let newInput = document.createElement('input');
-      newInput.type = "text"
-      newInput.className = "tagsInput"
-      newInput.placeholder = "#tag"
-      container.appendChild(newInput);
-      newInput.focus();
+      let input = document.createElement('input');
+      input.type = "text"
+      input.id = "tagsInput"
+      input.placeholder = "#tag"
+      container.insertBefore(input, container.firstChild);
+      input.focus();
+      input.addEventListener("keydown", () => {
+        if (event.key === "Enter") {
+          console.log('assign value:', input.value)
+          button.style.display = "block"
+          let tag = document.createElement('div');
+          tag.className = "newTag"
+          tag.dataset.value = input.value
+          let tagText = document.createElement('div');
+          tagText.innerText = input.value
+          let XButton = document.createElement('button');
+          XButton.innerText = "x"
+          XButton.addEventListener("click", ()=>{
+            tag.remove();
+          })
+          tag.appendChild(tagText)
+          tag.appendChild(XButton)
+
+          input.style.display = "none"
+          input.value = ''
+
+          container.appendChild(tag)
+        }
+      })
     }
   </script>
 </body>
