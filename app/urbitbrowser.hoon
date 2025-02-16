@@ -3,6 +3,13 @@
 /*  ui  %html  /app/urbitbrowser/html
 /*  ui-post  %html  /app/post/html
 /*  css  %css  /app/style/css
+/*  check-icon  %svg  /fil/urbitbrowser-check/svg
+/*  separator-icon  %svg  /fil/urbitbrowser-seperator/svg
+/*  x-icon  %svg  /fil/urbitbrowser-x/svg
+/*  vector-icon  %svg  /fil/urbitbrowser-vector/svg
+/*  lus-icon  %svg  /fil/urbitbrowser-lus/svg
+/*  hep-icon  %svg  /fil/urbitbrowser-hep/svg
+/*  urbitserif-italic  %ttf  /fil/urbitserif-italic-vf/ttf
 ::
 |%
 +$  versioned-state  $%(state-0)
@@ -150,6 +157,7 @@
     %-  flop  %-  send
     response-403 
   :: if path alredy been shared send message back 
+  ~&  >  tags
   ?.  =((~(get by paths) path) ~)
     %-  emil
     %-  flop  %-  send
@@ -401,6 +409,55 @@
       %-  emil  %-  flop  %-  send
       ?~  in-paths  [200 ~ [%redirect '/urbitbrowser']]
       [200 ~ [%html ui-post]]
+    ::
+        [%urbitbrowser %fil %check-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html check-icon)
+    ::
+        [%urbitbrowser %fil %separator-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html separator-icon)
+    ::
+        [%urbitbrowser %fil %x-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html x-icon)
+    ::
+        [%urbitbrowser %fil %vector-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html vector-icon)
+    ::
+        [%urbitbrowser %fil %lus-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html lus-icon)
+    ::
+        [%urbitbrowser %fil %hep-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html hep-icon)
+    ::fonts/UrbitSans
+        [%urbitbrowser %fonts %'UrbitSans' %'UrbitSerifItalicVF' ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'font/ttf']~
+      `urbitserif-italic
     ==
   ==
 ::
