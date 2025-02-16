@@ -7,15 +7,12 @@
   <link rel="stylesheet" href="/urbitbrowser/style.css">
 </head>
 <body>
-  <header>
-    <a id="title" href="/urbitbrowser">UrbitBrowser</a>
+  <header class="underlineText">
+    <a id="title" href="/urbitbrowser">Urbit Browser</a>
     <div id="loginButtons">
-      <button id="arvoLoginButton" style="display:none;">Arvo Login</button>
-      <button id="metaMaskLogInButton" style="display:none;">Azimuth Login</button>
-      <div id="metaMaskSection" style="display:none;">
-        <input type="text" id="urbitId" placeholder="Enter Urbit ID"/>
-        <button id="signInWithMetaMaskButton">Sign in</button>
-      </div>
+      <div id="sigilContainer" style="display:none;"></div>
+      <button id="logOut" style="display:none;">Log out</button>
+      <button id="logIn" style="display:none;">Log in</button>
     </div>
   </header>
   
@@ -23,7 +20,9 @@
   <div id="postContainer" class="container"></div>
   </main>
 
-  <script>
+  <script type="module">
+    import sigil from 'https://cdn.skypack.dev/-/@urbit/sigil-js@v2.2.0-lDYj1dosVWwKkEkrNWyi/dist=es2019,mode=imports/optimized/@urbit/sigil-js.js'
+
     document.addEventListener("DOMContentLoaded", async function() {
       let post = {}
       const api = new UrbitHttpApi.Urbit("");
@@ -54,21 +53,50 @@
       }
 
       function showCometLogin() {
-        document.getElementById("arvoLoginButton").style.display = "inline-block";
-        document.getElementById("metaMaskLogInButton").style.display = "inline-block";
+        const logInButton = document.getElementById("logIn")
+        logInButton.style.display = "inline-block";
+        const logInContainer = document.getElementById("logInContainer")
+        const logInContent = document.getElementById("logInContent")
+
+        logInButton.addEventListener("click", () => {
+          logInContainer.style.display = "flex";
+          document.body.style.overflow = "hidden";
+        })
+
+        logInContainer.addEventListener("click", (event) => {
+          if (!logInContent.contains(event.target)) {
+            logInContainer.style.display = "none";
+            document.body.style.overflow = "auto";
+          }
+        })
 
         document.getElementById("arvoLoginButton").addEventListener("click", function() {
           window.location.href = '/urbitbrowser/eauth';
-        });
-
-        document.getElementById("metaMaskLogInButton").addEventListener("click", function() {
-          document.getElementById("metaMaskSection").style.display = "inline-block";
         });
 
         document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
       }
 
       function renderPost(postUpdate){
+        let logOut = document.getElementById("logOut")
+        logOut.style.display = "inline-block";
+
+        //TODO: get patp !!
+
+        const sigilSVG = sigil({
+          point: 'lonhep-tamfeb',
+          size: 15,
+          background:'#0b0b07', 
+          foreground:'white',
+          detail:'default',
+          space:'none',
+        })
+
+        let sigilContainer = document.getElementById('sigilContainer')
+        sigilContainer.style.display = "flex"
+        sigilContainer.style.alignItems = 'center'
+        sigilContainer.innerHTML = sigilSVG 
+
         post = postUpdate
         console.log(postUpdate)
         const postPath = path.substring(path.indexOf('/', 1))
@@ -79,7 +107,7 @@
         
         container.innerHTML = ''
 
-        const timestamp = new Date(when).toLocaleString();
+        const timestamp = timeAgo(when);
         const containerHeader = document.createElement("div")
         containerHeader.id = 'containerHeader'
         containerHeader.className = 'post'
@@ -87,13 +115,42 @@
         containerPost.id = 'containerPost'
         containerPost.className = 'postContent'
         const containerPostHTML = 
-        `
-          <a class="postTitle" href=${link}>${postPath}</a>
-          <p class="postInfo">submitted by: ${submitter} on ${timestamp}</p>
-        `
+        `<a class="postTitle" href=${link}>${postPath.slice(1)}</a>`
+
+        const postInfo = document.createElement("div")
+        postInfo.className = "postInfo";
+        const postText = document.createElement("div")
+        postText.className = "postData"
+
+        postText.innerHTML = 
+          `Submitted by ${submitter} 
+          <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon">  
+          ${timestamp}`;
+
+        const tagsContainer = document.createElement("div")
+        tagsContainer.className = "tagsContainer"
+        if (tags.length != 0){
+          const lastSeparator= document.createElement('img')
+          lastSeparator.className = "separator"
+          lastSeparator.src = "/urbitbrowser/fil/separator-icon.svg"
+          lastSeparator.alt = "separartor-icon"
+          postText.append(lastSeparator)
+        }
+        tags.forEach(tag => {
+          const tagElement = document.createElement('button');
+          tagElement.className = "tag"
+          tagElement.innerHTML = tag
+          tagsContainer.appendChild(tagElement)
+        })
+
+        postInfo.appendChild(postText)
+        postInfo.appendChild(tagsContainer);
         containerPost.innerHTML = containerPostHTML
+        containerPost.appendChild(postInfo)
+        
         if(body != ''){
           const bodyElement = document.createElement("div")
+          bodyElement.className = "commentBody"
           bodyElement.innerHTML = body
           containerPost.append(bodyElement)
         }
@@ -134,24 +191,65 @@
 
         let commentsReverse = comments.reverse()
 
-        const commentsHTML = commentsReverse.map(comment => `
-            <div class="comment">
-              <p>${comment.who} - ${new Date(comment.when).toLocaleString()}</p>
-              <p>${comment.what}</p>
-            </div>
-          `).join('');
+        function createCommentHTML(comment) {
+          const timestamp = timeAgo(comment.when);
+          const commentContainer = document.createElement('div')
+          commentContainer.className = "comment"
+
+          const commentHeader = document.createElement('div')
+          commentHeader.className = "commentInfo"
+
+          let sigilContainer = document.createElement('div')
+          sigilContainer.style.display = "flex"
+          sigilContainer.style.alignItems = 'center'
+           
+          const sigilSVG = sigil({
+            point: comment.who,
+            size: 15,
+            background:'#0b0b07', 
+            foreground:'white',
+            detail:'default',
+            space:'none',
+          })
+          sigilContainer.innerHTML = sigilSVG 
+
+          let commentData = document.createElement('div')
+          commentData.className = 'postData'
+          commentData.innerHTML = 
+          `${comment.who} 
+          <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon"> 
+          <div class='grey'>${timestamp}</div>`
+
+          let commentText = document.createElement('div')
+          commentText.innerText = comment.what
+
+          commentHeader.appendChild(sigilContainer)
+          commentHeader.appendChild(commentData)
+          commentContainer.appendChild(commentHeader)
+          commentContainer.appendChild(commentText)
+
+          return commentContainer
+        }
           
           if(Rank() === 'comet'){
-            commentsContainer.innerHTML = commentsHTML
+            commentsReverse.forEach(comment => {
+              const commentElement = createCommentHTML(comment);
+              commentsContainer.appendChild(commentElement);
+            });
           }else{
             const commentForm = `
               <form id="commentForm" class="container">
-                <input type="text" id="commentText" placeholder="Write your comment..." required>
-                <button type="submit">Submit</button>
+                <input type="text" id="commentText" placeholder="Add a comment" required>
+                <button type="submit">Comment</button>
               </form>
             `;
 
-            commentsContainer.innerHTML = commentForm + commentsHTML 
+            commentsContainer.innerHTML = commentForm
+
+            commentsReverse.forEach(comment => {
+              const commentElement = createCommentHTML(comment);
+              commentsContainer.appendChild(commentElement);
+            });
 
             setTimeout(() => {
               const form = document.getElementById('commentForm');
@@ -217,6 +315,39 @@
     function Rank(){
       return JSON.parse(localStorage.getItem('rank'))
     }
+
+    function timeAgo(when) {
+      const now = new Date();
+      const diff = now - new Date(when);
+    
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      const months = Math.floor(days / 30);
+      const years = Math.floor(days / 365);
+    
+      if (years > 1) {
+        return `${years} years ago`;
+      } else if (years === 1) {
+        return '1 year ago';
+      } else if (months > 1) {
+        return `${months} months ago`;
+      } else if (months === 1) {
+        return '1 month ago';
+      } else if (days > 1) {
+        return `${days} days ago`;
+      } else if (days === 1) {
+        return '1 day ago';
+      } else if (hours > 0 & hours < 24) {
+        return `${hours} hours ago`;
+      } else if (minutes > 1 & minutes < 60) {
+        return `${minutes} minutes ago`;
+      } else {
+        return 'Just now';
+      }
+    }
+
   </script>
 </body>
 </html>

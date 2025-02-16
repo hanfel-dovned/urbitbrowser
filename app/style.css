@@ -3,31 +3,46 @@
   src: url('https://media.urbit.org/fonts/UrbitSans/UrbitSansVFWeb-Regular.woff2')
        format('woff2');
   font-weight: 100 700;
-  font-style: normal italic;
+  font-style: normal;
   }
-
+@font-face {
+  font-family: "Urbit Serif Italic";
+  src: url('./fonts/UrbitSans/UrbitSerifItalicVF.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  }
 :root {
   --fs-small: 13.6px;
   --fs-med: 17px;
-  --bg-dark: #000000;
-  --bg-grey: #363636;
-  --bg-light: #ddd;
+  --bg-dark: #0b0b07;
+  --bg-grey: #252521;
+  --bg-light: #2C2C24;
+  --bg-hover: #383834;
+  --bg-hover-light: #555552;
+  --bd-static: #2E2E25;
+  --bd-select: #43433E;
+  --fc-dark: #BABAB6;
+  --fc-grey: #837E7E;
+  --br: 5px;
 }
 
 body, html {
-  margin: 0;
   padding: 0;
   background-color: var(--bg-dark);
-  color:#fff;
+  color: white;
   font-family: "Urbit Sans";
+  scroll-behavior: smooth;
+  cursor: default;
+  font-size: var(--fs-med);
 }
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 0;
+  position: relative;
 }
-main{
+body{
   margin: 20px auto;
   width: 90%;
   max-width: 800px;
@@ -35,132 +50,219 @@ main{
   flex-direction: column;
   gap: 10px;
 }
-
 #title {
-  font-size: 1.5rem;
+  font-size: 24px;
   color: #ffffff;
   text-decoration: none;
-  font-family: "Urbit Sans";
-  font-style: italic;
+  font-family: "Urbit Serif Italic";
 }
 #loginButtons {
   display: flex;
   gap: 10px;
 }
 div{
-  border-radius: 4px;
+  border-radius: var(--br);
 }
 button {
   font-family: "Urbit Sans";
-  padding: 3px;
+  padding: 2px 5px;
   cursor: pointer;
   font-size: var(--fs-med);
   border: 1px solid var(--bg-grey);
-  border-radius: 4px;
+  border-radius: var(--br);
   background-color: var(--bg-grey);
   color: white;
 }
 button:hover {
-  background-color: var(--bg-light);;
+  border: 1px solid var(--bg-hover);
+  background-color: var(--bg-hover);
 }
-/* .buttonPadding{
-    padding: 6px;
-} */
 input, textarea{
   font-family: "Urbit Sans";
-  padding: 8px;
-  border-radius: 4px;
-  font-size: var(--fs-small);
-  background-color: var(--bg-dark);
+  padding: 3px 7px;
+  border-radius: var(--br);
+  font-size: var(--fs-med);
+  background-color: inherit;
   color:rgb(255, 255, 255);
-  border: 1px solid var(--bg-grey);
-}
-input:focus, textarea:focus{
-    border: 1px solid #ffffff;
-    outline: none;
+  border: 1px solid var(--bg-hover);
 }
 textarea{
-    resize: none;
-    height: 120px;
+  resize: none;
+  height: 120px;
 }
-select, option{
-    font-family: "Urbit Sans";
-    background-color: var(--bg-dark);
-    color:#ffffff;
-}
-select{
-    padding: 8px;
-    border: 1px solid var(--bg-grey);
-    border-radius: 4px;
-    font-size: var(--fs-small);
+input:hover, 
+input:focus,
+textarea:hover, 
+textarea:focus{
+  border: 1px solid var(--bd-select);
+  outline: none;
 }
 h2{
-   margin-bottom: 0;
+  margin-bottom: 0;
+}
+.grey{
+  color: #7D7D79;
+  text-align: center;
+}
+#logInContainer{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(11, 11, 7, 0.75);
+  backdrop-filter: blur(3px);
+  justify-content: center;
+  align-items: center;
+  z-index: 101;
+}
+#logInContent{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 25px;
+  background: #14140F;
+  border: solid 1px #32322B;
+  border-radius: var(--br);
+}
+.logInContainerPart{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+#signInHeader{
+  font-weight: normal;
+  width: 100%;
+  text-align: left;
+  margin: 0;
 }
 #metaMaskSection {
-  display: none;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
   margin-right: 20px;
 }
 #urbitId {
   margin-right: 10px;
   padding: 5px;
   border: 1px solid #999;
-  border-radius: 4px;
+  border-radius: var(--br);
+}
+#sigilContainer{
+  border-radius: var(--br);
 }
 #errorMessage{
   display: none;
   color: red;
   padding-left: 10px;
+  text-decoration: none;
+}
+#errorMessage:hover{
+  color: default;
 }
 #submitSection {
   display: none;
-  background-color: var(--bg-grey);
+  background-color: #14140F;
   padding: 10px;
 }
 #submitSectionTagPart{
   display: flex;
   gap: 5px;
 }
+button#submitTag{
+  margin: 0 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 13px;
+  width: 13px;
+  justify-content: center;
+  align-self: center;
+  background-color: inherit;
+  border: none;
+}
+button#submitTag:hover {
+  background-color: #484845;
+}
+#addTags{
+  color: var(--fc-grey);
+}
+#addTags button:hover{
+  background-color: var(--bg-hover);
+}
+#newTagForm{
+  background-color:  var(--bg-grey);
+}
+#newTagForm:hover {
+  background-color:  var(--bg-hover);
+}
+#tagsInput{
+  background-color: inherit;
+  border: none;
+  width: 40px;
+}
 #submitButtonContainer{
-    display: flex;
-    flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 #submitButton{
-    margin-left: auto;
+  margin-left: auto;
 }
 #linkInput {
   flex-grow: 2;
 }
+#filters{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-dark);
+}
 #filterContainer{
-    display: flex;
-    gap: 5px;
+  display: flex;
+  gap: 5px;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 #sortFilter{
-    align-self: center;
+  align-self: center;
+}
+#selectTrigger{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 80px;
+}
+#downArrow{
+  color: var(--fc-dark);
 }
 #selectArea {
-    background-color: var(--bg-grey);
-    display: none;
-    position: absolute;
-    margin-top: 3px;
-  }
+  background-color: var(--bg-grey);
+  display: none;
+  position: absolute;
+  margin-top: 3px;
+  width: 74px;
+}
 #selectArea.open, #selectArea.open .selectOption {
-    display: block;
-    padding: 3px
+  display: block;
+  padding: 3px
   }
 .selectOption:hover{
-    background-color: var(--bg-light);;
+  background-color: var(--bg-light);;
 }
-#searchQueryContainer, 
-#searchQueryContainer div {
+#searchBy{
+  width: 100px;
+}
+#searchQueryContainer{
   display: flex;
   flex-direction: row;
   gap: 5px;
   align-items: center;
-}
-#searchQueryContainer div {
-  background-color: var(--bg-grey);
-  padding: 0 3px;
 }
 #clearAll{
   display: none;
@@ -170,28 +272,44 @@ h2{
 }
 .post, .comment {
   display: flex;
-  background-color: #0F0F0E;
+  gap: 10px;
   margin-bottom: 10px;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #0F0F0E;
-  padding-top:0;
-  padding-bottom: 0;
+  padding: 0 10px;
+  border-radius: var(--br);
 }
 .post{
+  background-color: #14140F;
+  border: 1px solid var(--bg-);
   cursor: pointer;
+}
+.post:hover{
+  background-color: #1D1D1A;
 }
 .voteSection {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  margin-right: 10px;
+  /* justify-content: flex-start; */
+  justify-content: center;
+  margin: 10px;
+  margin-left: 0;
 }
 .voteArrow {
+  display: flex;
+  padding: 2px;
+  align-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--br);
   cursor: pointer;
-  margin: 4px 0;
-  font-size: 20px;
+  background-color: inherit;
+}
+.voteArrow:hover,
+.voteArrow.hovered {
+  background-color: #262622;
+  border: 1px solid #262622;
+}
+.scoreEl{
+  padding: 2px;
 }
 .postContent {
   display: flex;
@@ -200,12 +318,13 @@ h2{
   gap: 5px;
 }
 .postTitle {
-    font-size: var(--fs-med);
+  color: white;
+  font-size: var(--fs-med);
   text-decoration: none;
-  color: #0079d3;
 }
 .postTitle:hover {
-  text-decoration: underline;
+  text-decoration: none;
+  color: var(--fc-dark);
 }
 .postInfo {
   color: #b5b5b5;
@@ -213,62 +332,117 @@ h2{
   display: flex;
   align-items: baseline;
 }
+.postInfo:hover{
+  color: white;
+}
+.postData{
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  align-items: center;
+}
 .separator {
-    font-weight: bold;
-    font-size: 1.2em;
-    margin: 0 5px;
-  }
-  
+  height: 10px;
+}
 .tagsContainer{
   display: flex;
   direction: column;
-  /* gap: 5px; */
-  /* pointer-events: none; */
 }
-.newTag{
-    display: flex;
-    gap:3px;
-    background-color: var(--bg-grey);
-    border: 1px solid #333;
-    border-radius: 4px;
-    padding: 3px;
+.searchElem{
+  height: 27px;
 }
-.newTag div{
-    align-self: center;
+.newTag,
+.searchElem {
+  display: flex;
+  gap: 7px;
+  background-color: var(--bg-grey);
+  border: 1px solid var(--bg-grey);
+  border-radius: var(--br);
+  padding: 1px 5px;
 }
-.tag {      
-  /* padding: 8px 14px; */
+.newTag div,
+.newTag button,
+.searchElem div,
+.searchElem button{
+  align-self: center;
+}
+.newTag button,
+.searchElem button{
+  display: flex;
+  padding: 2px;
+}
+.newTag button{
+  background: inherit;
+}
+.newTag button:hover{
+  background: #484845;
+  border-color: #484845;
+}
+.newTag button:active {
+  background: #555553;
+  border-color: #555553;
+}
+.xIcon{
+  height: 14px;
+}
+button.tag {      
+  padding: 0px 5px;
+  margin: 0 5px;
   font-size: var(--fs-small);
-  border: 1px solid #333;
-  border-radius: 4px;
+  color: var(--fc-dark);
+  background: var(--bg-hover);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--br);
+}  
+button.tag:hover{
+  color: white
 }
 .underlineText{
-    display: inline-block;
-    border-bottom: 1px solid var(--bg-grey);
-    margin-bottom: 0;
-    padding-left: 5px;
+  margin-bottom: 0;
+  padding-left: 5px; 
+  position: relative;
+  padding-bottom: 15px;
+}
+.underlineText::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%; 
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 1px;
+  background-color: var(--bg-hover);
 }
 /* post.html */
 #containerHeader{
-    display: flex;
-    flex-direction: row;
-    gap: 5px;
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+#containerPost{
+  padding: 10px 0;
 }
 .commentsContainer{
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 .comment{
-    flex-direction: column;
+  flex-direction: column;
+  padding: 15px 0;
 }
 #commentForm{
-    display: flex;
-    gap:5px;
+  display: flex;
+  gap:5px;
 }
 #commentText{
-    width: 80%;
-    /* height: 70px; */
-    padding: 5px;
+  width: 100%;
+  padding: 5px;
+}
+.commentInfo{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  font-size: var(--fs-small);
+  gap: 10px;
 }
