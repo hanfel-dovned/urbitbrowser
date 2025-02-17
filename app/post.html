@@ -3,7 +3,6 @@
 <head>
   <title>Urbit Browser</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
-  <!-- <script src="/session.js"></script> -->
   <link rel="stylesheet" href="/urbitbrowser/style.css">
 </head>
 <body>
@@ -56,19 +55,32 @@
           path: path,
           event: renderPost,
           quit: postSub,
-          err:()=>{console.log('Subscription fail')}
+          err:()=>{console.error('Subscription fail')}
         });
       }
 
       try{
-        if (Rank() === "comet") {
+        const response = await fetch('/urbitbrowser/state');
+
+        const data = await response.json();
+
+        const { paths, challenge: servChallenge, rank: userRank, patp} = data;
+
+
+        if (userRank === "comet"){
           showCometLogin();
         }else{
+          if(Rank() === "comet"){
+            localStorage.setItem('challenge', JSON.stringify(servChallenge));
+            localStorage.setItem('rank', JSON.stringify(userRank));
+            localStorage.setItem('urbitId', JSON.stringify(patp));
+          }
+
           showCommentSubmit()
         }
         postSub()
       }catch(err){
-        console.error("Error fetching state:", err);
+        console.log("Error fetching state:", err);
       }
 
       function showCometLogin() {
@@ -89,7 +101,7 @@
         })
 
         document.getElementById("arvoLoginButton").addEventListener("click", function() {
-          window.location.href = '/urbitbrowser/eauth';
+          window.location.href = `/~/login?redirect=${window.location.pathname}&eauth`;
         });
 
         document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
@@ -129,19 +141,10 @@
         let logOut = document.getElementById("logOut")
         logOut.style.display = "inline-block";
         logOut.addEventListener("click", () => {
-          const cookies = document.cookie.split(';')
-          cookies.forEach(cookie => {
-            if (cookie.trim().startsWith("urbauth-" + patp)) {
-              const date = new Date();
-              date.setTime(date.getTime() - 1);
-              const expires = "expires=" + date.toUTCString();
-              document.cookie = cookie + "=; " + expires + "; path=/";
-              localStorage.removeItem('rank');
-              localStorage.removeItem('challenge');
-              localStorage.removeItem('urbitId');
-              location.reload()
-            }
-          });
+          localStorage.removeItem('rank');
+          localStorage.removeItem('challenge');
+          localStorage.removeItem('urbitId');
+          window.location.href = `/~/logout?redirect=${window.location.pathname}&eauth`;
         })
 
         const patp = UrbitId()
@@ -164,7 +167,6 @@
       function renderPost(postUpdate){
 
         post = postUpdate
-        console.log(postUpdate)
         const postPath = path.substring(path.indexOf('/', 1))
 
         const { when, votes, score, submitter, body, link, tags, comments } = postUpdate;
@@ -322,10 +324,8 @@
               if(form) {
 
               form.addEventListener('submit', async (e) => {
-                console.log('submitting form')
                 e.preventDefault()
                 const commentText = document.getElementById(`commentText`).value;
-                console.log('comment input value', commentText)
     
                 try {
                   const resp = await fetch('/urbitbrowser', {
@@ -333,7 +333,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ comment: { path: postPath, text: commentText }})
                   });
-                  console.log(resp)
                   if(resp.status === 200){
                     console.log('published a comment')
                   }
@@ -353,7 +352,6 @@
           logInPopUp()
         }
         try {
-          console.log(path)
           const resp = await fetch('/urbitbrowser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

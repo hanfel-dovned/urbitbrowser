@@ -116,14 +116,12 @@
     ::
       [%post *]
     =/  post-path  +:path
-    ~&  >  post-path 
     ?~  (~(get by paths) post-path)  
     ~&  >>>  %kick
       %-  emit
       [%give %kick ~[(welp /post post-path)] ~]
     =/  =meta  (~(got by paths) post-path)
     =/  link  (get-url post-path)
-    ~&   >  meta
     %-  emit
     [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post link meta])]
   ==
@@ -157,7 +155,6 @@
     %-  flop  %-  send
     response-403 
   :: if path alredy been shared send message back 
-  ~&  >  tags
   ?.  =((~(get by paths) path) ~)
     %-  emil
     %-  flop  %-  send
@@ -226,7 +223,6 @@
     ::  overwrite vote and score -2
     ::  if oldVote is %.n and new is %.y
     ::  overwrite vote and score +2
-    ~&  %changing-vote
     =:  votes.meta  (~(put by votes.meta) get-id vote)
         score.meta 
           ?:  vote 
@@ -312,7 +308,6 @@
       [%http-req @ *]
     ?+    sign-arvo  that 
         [%iris %http-response *]
-      ~&  client-response.sign-arvo
       =/  response  client-response.sign-arvo
       ?+   -.response  that
           %finished
@@ -355,7 +350,6 @@
       (post path.act body.act tags.act eyre-id)
     ::
         %vote
-      ~&  (~(get by (malt header-list.request.inbound-request)) 'referer')
       (vote path.act vote.act eyre-id)
     ::
         %comment
@@ -366,7 +360,6 @@
         !!
       =.  sessions
         (~(put by sessions) [src.bowl who.act])
-      ~&  >  :-  src.bowl  'authenticated'
       that
     ==
     ::
@@ -380,7 +373,6 @@
     =?  challenges
         =(src.bowl (~(got by sessions) src.bowl))
       (~(put in challenges) new-challenge)
-    ~&  >>  site
     ?+    site  
       %-  emil  %-  flop  %-  send
       [404 ~ [%plain "404 - Not Found"]]
@@ -583,7 +575,6 @@
 ++  update-card 
   |=  [=path =meta link=cord]
   ^-  card 
-  ~&  >>>  `update`[%path path meta link]
   [%give %fact ~[/paths] %ub-update !>(`update`[%path path meta link])]
 ::
 :: makes GET request to provided url to determine it's public accessibility

@@ -3,7 +3,6 @@
 <head>
   <title>Urbit Browser</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
-  <!-- <script src="/session.js"></script> -->
   <link rel="stylesheet" type="text/css" href="/urbitbrowser/style.css"/>
 </head>
 <body>
@@ -111,7 +110,7 @@
         path: "/paths",
         event: appendSubPost,
         quit: pathSub,
-        err:()=>{console.log('Subscription fail')}
+        err:()=>{console.error('Subscription fail')}
       });
       }
 
@@ -121,6 +120,8 @@
         const response = await fetch('/urbitbrowser/state');
         const data = await response.json();
         let challenge;
+
+        console.log(data)
 
         const { paths, challenge: servChallenge, rank: userRank, patp} = data;
         localStorage.setItem('challenge', JSON.stringify(servChallenge));
@@ -173,10 +174,8 @@
       function validPatp (path){
         const withoutFirstSlash = path.startsWith('/') ? path.slice(1) : path;
         const shipName = withoutFirstSlash.split('/')[0];
-        console.log('ship name', shipName)
   
         const isValid = ob.isValidPatp(shipName)
-        console.log('isValid?', isValid)
 
         return isValid
       }
@@ -187,19 +186,10 @@
         let logOut = getById("logOut")
         logOut.style.display = "inline-block";
         logOut.addEventListener("click", () => {
-          const cookies = document.cookie.split(';')
-          cookies.forEach(cookie => {
-            if (cookie.trim().startsWith("urbauth-" + patp)) {
-              const date = new Date();
-              date.setTime(date.getTime() - 1);
-              const expires = "expires=" + date.toUTCString();
-              document.cookie = cookie + "=; " + expires + "; path=/";
-              localStorage.removeItem('rank');
-              localStorage.removeItem('challenge');
-              localStorage.removeItem('urbitId');
-              location.reload()
-            }
-          });
+          localStorage.removeItem('rank');
+          localStorage.removeItem('challenge');
+          localStorage.removeItem('urbitId');
+          window.location.href = '/~/logout?redirect=/urbitbrowser&eauth';
         })
 
         const sigilSVG = sigil({
@@ -236,7 +226,6 @@
           const validPath = validPatp(linkValue)
 
           if (!validPath) {
-            console.log('patp isnt valid')
             errElement.style.display = "flex";
             if (oldErrText) {
               oldErrText.remove();
@@ -260,11 +249,9 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ post: { path: linkValue, body: bodyInput.value, tags: tagsArray } })
             });
-            console.log(resp)
             
             if(resp.status === 200){
               // clearing up form values
-              console.log('old error text', oldErrText)
               if (oldErrText) {
               errElement.style.display = "none";
               oldErrText.remove();
@@ -333,9 +320,7 @@
           }
 
         } else {
-          console.log('adding new post', newPost)
           const errElement = document.getElementById("errorText")
-          console.log('errElement', errElement)
 
           if(errElement){
             closeErrorMessage()
@@ -579,7 +564,6 @@
 
       function renderByFilter(postsArr){
         if(filter === 'top'){
-          console.log('sorting by popular', postsArr)
           // sort array by votes 
           sortByPopular(postsArr, false)
         }else if(filter ==='new'){
@@ -592,10 +576,8 @@
           const sortedPosts = postsArr.sort((a, b) => {
             const latestCommentA = a.comments.length > 0 ? Math.max(...a.comments.map(comment => comment.when)) : -Infinity;
             const latestCommentB = b.comments.length > 0 ? Math.max(...b.comments.map(comment => comment.when)) : -Infinity;
-            console.log(latestCommentB - latestCommentA)
             return latestCommentA - latestCommentB;
            });
-          console.log('sorted', sortedPosts)
           renderPosts(sortedPosts, false)
         }
       }
@@ -624,7 +606,6 @@
           let XButton = document.createElement('button');
           XButton.innerHTML = `<img class='xIcon' src="/urbitbrowser/fil/x-icon.svg" alt="x-icon">`
           XButton.addEventListener("click", () => {
-            console.log('removing', inputValue)
             searchElem.remove();
             searchPaths = searchPaths.filter(item => item !== inputValue);
             searchTags = searchTags.filter(item => item !== inputValue);
@@ -633,27 +614,22 @@
 
             if(searchPaths.length !== 0 && searchTags.length === 0){
               searchPostsState = filterPostsByPath(searchPaths, posts)
-              console.log('no paths, only tags', searchPostsState)
               renderByFilter(searchPostsState)
             }else if(searchPaths.length === 0 && searchTags.length != 0){
               searchPostsState  = filterPostsByTags(searchTags, posts)
-              console.log('no tags, only paths', searchPostsState)
               renderByFilter(searchPostsState)
             }else if(searchPaths.length != 0 && searchTags.length != 0){
               searchPostsState = filterPostsByPath(searchPaths, posts)
               searchPostsState = filterPostsByTags(searchTags, searchPostsState)
-              console.log('paths and tags', searchPostsState)
               renderByFilter(searchPostsState)
             }else{
               searchPostsState = []
-              console.log('render all posts')
               renderByFilter(posts)
               document.getElementById('clearAll').classList.remove('open');
             }
           })
 
           if (inputValue.startsWith('/~') || inputValue.startsWith('~')) {
-            console.log('search by path')
             if(inputValue.startsWith('~')){
               searchElem.innerHTML = `<div>${inputValue}</div>`
               inputValue = '/' + inputValue
@@ -665,21 +641,17 @@
             if(searchPaths.length == 0 && searchTags.length == 0){
               //  if filter by path and tag are empty 
               //  render through main posts array
-              console.log('if filter by path and tag are empty')
               searchPostsState = getPostBySearch(posts, inputValue)
               renderByFilter(searchPostsState)
             }else{
               //  if has tags search through searchPostsState
               if(searchTags.length != 0 && searchPaths.length == 0){
-                console.log('has tags search through searchPostsState')
+                // console.log('has tags search through searchPostsState')
                 searchPostsState = getPostBySearch(searchPostsState, inputValue)
                 renderByFilter(searchPostsState)
               }else if(searchPaths.length != 0){
                 let filteredPosts = getPostBySearch(posts, inputValue)
-                console.log('filtered posts', filteredPosts)
-                //let postsArr = filteredPosts
                 if(searchTags.length != 0){
-                  console.log(searchTags, filteredPosts)
                   filteredPosts = filterPostsByTags(searchTags, filteredPosts)
                 }
                 searchPostsState = [...new Set([...searchPostsState, ...filteredPosts])];
@@ -700,15 +672,12 @@
 
             if(searchTags.includes(inputValue)) return;
 
-            console.log('search by tag')
-            console.log(searchPaths)
-            console.log(searchTags)
             //  value is a tag
             if(searchPaths.length != 0 || searchTags.length != 0){
-              console.log('through searchPostsState')
+              // console.log('through searchPostsState')
               renderPostsByTag(searchPostsState, inputValue)
             }else{
-              console.log('through all posts')
+              // console.log('through all posts')
               renderPostsByTag(posts, inputValue)
             }
             //  add to array of filteredByTag
@@ -723,7 +692,6 @@
         tags.forEach(tag => {
           postsArr = filterByTag(postsArr, tag);
         });
-        console.log('posts arr', postsArr)
         return postsArr
       }
 
@@ -747,7 +715,6 @@
       
       function getPostBySearch(postsArr, query){
         const filteredPosts = postsArr.filter(post => post.path.startsWith(query));
-        console.log(query, filteredPosts)
         // Sort the array based on the '/' values (after '/')
         const sortedPosts = filteredPosts.sort((a, b) => {
           // Extract the part after the '/' to compare
@@ -851,7 +818,6 @@
       });
       submitBtn.addEventListener("click", function() {
         if (input.value.trim() !== "") {
-          console.log('assign value:', input.value)
           button.style.display = "block"
           let tag = document.createElement('div');
           tag.className = "newTag"

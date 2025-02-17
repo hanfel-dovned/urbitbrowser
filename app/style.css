@@ -13,7 +13,8 @@
   }
 :root {
   --fs-small: 13.6px;
-  --fs-med: 17px;
+  /* --fs-med: 17px; */
+  --fs-med: 20px;
   --bg-dark: #0b0b07;
   --bg-grey: #252521;
   --bg-light: #2C2C24;
