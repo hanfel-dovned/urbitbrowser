@@ -3,7 +3,7 @@
 <head>
   <title>Urbit Browser</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
-  <script src="/session.js"></script>
+  <!-- <script src="/session.js"></script> -->
   <link rel="stylesheet" type="text/css" href="/urbitbrowser/style.css"/>
 </head>
 <body>
@@ -20,7 +20,6 @@
 
     <div id="logInContainer" style="display:none;">
       <div id="logInContent">
-        <!-- <h2 id="signInHeader">Sign In</h2> -->
         <div class="logInContainerPart">
           <div>Log in with Azimuth if you have Urbit ID held in a Meta Mask wallet.</div>
           <div id="metaMaskSection">
@@ -32,7 +31,6 @@
         <div class="logInContainerPart">
           <div>
             <div>Log in with Arvo to connect via Urbit network.</div>
-            <!-- <div class="grey">You will be redirected to -----.</div> -->
           </div>
           <button id="arvoLoginButton">Arvo Sign in</button>
         </div>
@@ -90,6 +88,10 @@
   <script type="module">
   import ob from 'https://cdn.skypack.dev/urbit-ob';
   import sigil from 'https://cdn.skypack.dev/-/@urbit/sigil-js@v2.2.0-lDYj1dosVWwKkEkrNWyi/dist=es2019,mode=imports/optimized/@urbit/sigil-js.js'
+
+
+  //  TODO:  remove from production
+  window.ship = "fun";
 
     document.addEventListener("DOMContentLoaded", async function() {
       let posts = []
@@ -184,9 +186,24 @@
       function showSubmissionArea(patp) {
         let logOut = getById("logOut")
         logOut.style.display = "inline-block";
-//patp,
+        logOut.addEventListener("click", () => {
+          const cookies = document.cookie.split(';')
+          cookies.forEach(cookie => {
+            if (cookie.trim().startsWith("urbauth-" + patp)) {
+              const date = new Date();
+              date.setTime(date.getTime() - 1);
+              const expires = "expires=" + date.toUTCString();
+              document.cookie = cookie + "=; " + expires + "; path=/";
+              localStorage.removeItem('rank');
+              localStorage.removeItem('challenge');
+              localStorage.removeItem('urbitId');
+              location.reload()
+            }
+          });
+        })
+
         const sigilSVG = sigil({
-          point: 'lonhep-tamfeb',
+          point: patp,
           size: 15,
           background:'#0b0b07', 
           foreground:'white',
@@ -478,12 +495,9 @@
 
       async function voteOnPath(path, isUpvote) {
         if (Rank() === "comet") {
-          //  TODO: add login pop up
-          alert("You must log in to vote.");
-          return;
+          logInPopUp()
         }
         try {
-          console.log(path)
           const resp = await fetch('/urbitbrowser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -804,6 +818,11 @@
         return 'Just now';
       }
     }
+
+    function logInPopUp(){
+      const logInContainer = document.getElementById("logInContainer")
+      logInPopUp()
+      }
   </script>
   <script>
     function closeErrorMessage(){

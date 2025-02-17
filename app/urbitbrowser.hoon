@@ -275,7 +275,8 @@
     %-  flop  %-  send 
     [200 ~ [%plain "comment action was successful"]]
   :~
-    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post (get-url path) u.meta])]
+    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post link u.meta])]
+    (update-card path u.meta link)
   ==
 ::
 ::  Receive a link as a remote scry response.

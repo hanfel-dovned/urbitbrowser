@@ -3,7 +3,7 @@
 <head>
   <title>Urbit Browser</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
-  <script src="/session.js"></script>
+  <!-- <script src="/session.js"></script> -->
   <link rel="stylesheet" href="/urbitbrowser/style.css">
 </head>
 <body>
@@ -17,11 +17,31 @@
   </header>
   
   <main>
-  <div id="postContainer" class="container"></div>
+    <div id="logInContainer" style="display:none;">
+      <div id="logInContent">
+        <div class="logInContainerPart">
+          <div>Log in with Azimuth if you have Urbit ID held in a Meta Mask wallet.</div>
+          <div id="metaMaskSection">
+            <input type="text" id="urbitId" placeholder="~sampel-palnet"/>
+            <button id="signInWithMetaMaskButton">Azimuth Sign in</button>
+          </div>
+        </div>
+        <div class="grey">or</div>
+        <div class="logInContainerPart">
+          <div>
+            <div>Log in with Arvo to connect via Urbit network.</div>
+          </div>
+          <button id="arvoLoginButton">Arvo Sign in</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="postContainer" class="container"></div>
   </main>
 
   <script type="module">
     import sigil from 'https://cdn.skypack.dev/-/@urbit/sigil-js@v2.2.0-lDYj1dosVWwKkEkrNWyi/dist=es2019,mode=imports/optimized/@urbit/sigil-js.js'
+    window.ship = "fun";
 
     document.addEventListener("DOMContentLoaded", async function() {
       let post = {}
@@ -31,7 +51,6 @@
       const path = urlPath.substring(urlPath.indexOf('/', 1))
   
       function postSub() {
-
         window.id = api.subscribe({
           app: "urbitbrowser",
           path: path,
@@ -40,13 +59,13 @@
           err:()=>{console.log('Subscription fail')}
         });
       }
-      try{
-        console.log('rank', Rank())
-        if (Rank() === "comet") {
-          console.log('commet')
-          showCometLogin();
-        }
 
+      try{
+        if (Rank() === "comet") {
+          showCometLogin();
+        }else{
+          showCommentSubmit()
+        }
         postSub()
       }catch(err){
         console.error("Error fetching state:", err);
@@ -59,8 +78,7 @@
         const logInContent = document.getElementById("logInContent")
 
         logInButton.addEventListener("click", () => {
-          logInContainer.style.display = "flex";
-          document.body.style.overflow = "hidden";
+          logInPopUp()
         })
 
         logInContainer.addEventListener("click", (event) => {
@@ -75,16 +93,61 @@
         });
 
         document.getElementById("signInWithMetaMaskButton").addEventListener("click", signInWithMetaMask);
+
+        async function signInWithMetaMask() {
+          try {
+            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            const account = accounts[0];
+            const signature = await window.ethereum.request({
+              method: "personal_sign",
+              params: [account, Challenge()],
+            });
+            const body = {
+              who: document.getElementById("urbitId").value,
+              address: account,
+              signature: signature,
+              secret: Challenge(),
+            };
+            const response = await fetch('/urbitbrowser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ auth: body }),
+            });
+            if (response.ok) {
+              location.reload();
+            } else {
+              alert("Login failed. Please try again.");
+            }
+          } catch (error) {
+            console.error("MetaMask login failed:", error);
+            alert("An error occurred during MetaMask login. Please try again.");
+          }
+        }
       }
 
-      function renderPost(postUpdate){
+      function showCommentSubmit(){
         let logOut = document.getElementById("logOut")
         logOut.style.display = "inline-block";
+        logOut.addEventListener("click", () => {
+          const cookies = document.cookie.split(';')
+          cookies.forEach(cookie => {
+            if (cookie.trim().startsWith("urbauth-" + patp)) {
+              const date = new Date();
+              date.setTime(date.getTime() - 1);
+              const expires = "expires=" + date.toUTCString();
+              document.cookie = cookie + "=; " + expires + "; path=/";
+              localStorage.removeItem('rank');
+              localStorage.removeItem('challenge');
+              localStorage.removeItem('urbitId');
+              location.reload()
+            }
+          });
+        })
 
-        //TODO: get patp !!
+        const patp = UrbitId()
 
         const sigilSVG = sigil({
-          point: 'lonhep-tamfeb',
+          point: patp,
           size: 15,
           background:'#0b0b07', 
           foreground:'white',
@@ -96,6 +159,9 @@
         sigilContainer.style.display = "flex"
         sigilContainer.style.alignItems = 'center'
         sigilContainer.innerHTML = sigilSVG 
+      }
+
+      function renderPost(postUpdate){
 
         post = postUpdate
         console.log(postUpdate)
@@ -284,9 +350,7 @@
 
       async function voteOnPath(path, isUpvote) {
         if (Rank() === "comet") {
-          //  TODO: add login pop up
-          alert("You must log in to vote.");
-          return;
+          logInPopUp()
         }
         try {
           console.log(path)
@@ -298,11 +362,10 @@
           if (resp.ok) {
             console.log('voted')
           } else {
-            alert("Vote failed");
+            console.error("Vote failed");
           }
         } catch (err) {
           console.error("Error sending vote:", err);
-          alert("Vote error");
         }
       }
     })
@@ -348,6 +411,11 @@
       }
     }
 
+    function logInPopUp(){
+      const logInContainer = document.getElementById("logInContainer")
+        logInContainer.style.display = "flex";
+        document.body.style.overflow = "hidden";
+      }
   </script>
 </body>
 </html>
