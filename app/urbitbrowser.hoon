@@ -9,6 +9,7 @@
 /*  vector-icon  %svg  /fil/urbitbrowser-vector/svg
 /*  lus-icon  %svg  /fil/urbitbrowser-lus/svg
 /*  hep-icon  %svg  /fil/urbitbrowser-hep/svg
+/*  add-tag-icon  %svg  /fil/urbitbrowser-add-tag/svg
 /*  urbitserif-italic  %ttf  /fil/urbitserif-italic-vf/ttf
 ::
 |%
@@ -174,9 +175,9 @@
   ?~  (~(get by links) ship)
     ::  sending request to eauth to get valid url for ship
     %-  emil
-    :: %+  welp 
-    ::   %-  flop  %-  send
-    ::   (ok-post-response path)
+    %+  welp 
+      %-  flop  %-  send
+      (ok-post-response path)
     :~
       :*  %pass  (welp /eauth/[eyre-id]/(scot %p ship) path)
           [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
@@ -184,9 +185,9 @@
     ==
   ::  making GET request to url
   %-  emil
-  :: %+  welp 
-  ::   %-  flop  %-  send
-  ::   (ok-post-response path)
+  %+  welp 
+    %-  flop  %-  send
+    (ok-post-response path)
   ~[(get-req-card eyre-id path)]
 ::
 ::  Count a user's vote.
@@ -218,7 +219,10 @@
     %-  emil
     %+  welp 
       response
-    ~[(update-card path meta link)]
+    :~
+      [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post link meta])]
+      (update-card path meta link)
+    ==
     ::  if oldVote is %.y and new is %.n
     ::  overwrite vote and score -2
     ::  if oldVote is %.n and new is %.y
@@ -236,7 +240,10 @@
     %-  emil
     %+  welp 
       response
-    ~[(update-card path meta link)]
+    :~
+      [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post link meta])]
+      (update-card path meta link)
+    ==
   =:  votes.meta  (~(put by votes.meta) get-id vote)
       score.meta  
         ?:  vote  (add score.meta 1) 
@@ -248,7 +255,10 @@
   %-  emil
     %+  welp 
       response
-  ~[(update-card path meta link)]
+    :~
+      [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post link meta])]
+      (update-card path meta link)
+    ==
 ::
 ++  create-comment
   |=  [=path text=@t eyre-id=@ta]
@@ -361,6 +371,12 @@
       =.  sessions
         (~(put by sessions) [src.bowl who.act])
       that
+    ::
+        %logout 
+      =.  sessions
+        (~(del by sessions) src.bowl)
+      %-  emil  %-  flop  %-  send
+      [200 ~ [%plain "success"]]
     ==
     ::
       %'GET'
@@ -444,6 +460,13 @@
         eyre-id
       :-  :-  200  ['content-type'^'image/svg+xml']~
       `(as-octs:mimes:html hep-icon)
+    ::
+        [%urbitbrowser %fil %add-tag-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html add-tag-icon)
     ::fonts/UrbitSans
         [%urbitbrowser %fonts %'UrbitSans' %'UrbitSerifItalicVF' ~]
       %-  emil  %-  flop
@@ -492,6 +515,7 @@
       [%vote (ot ~[path+pa vote+bo])]
       [%comment (ot ~[path+pa text+so])]
       [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
+      [%logout bo]
   ==
 ::
 ++  get-url 

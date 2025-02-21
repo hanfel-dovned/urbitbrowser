@@ -41,7 +41,7 @@
       <input type="text" id="linkInput" placeholder="~sampel-palnet/path" required="true">
       <div id="submitSectionTagPart">
         <div id="tagsInputContainer">
-        <button type="button" id="addTags" onclick="addInput()" class="buttonPadding">Add Tags +</button>
+        <button type="button" id="addTags" onclick="addInput()" class="buttonPadding">Add Tags <img class="arrIcon" src="/urbitbrowser/fil/x-icon.svg" alt="add-icon"></button>
         <div id="newTagForm" style="display: none;">
           <input id="tagsInput" placeholder="#tag" type="text"/>
           <button id="submitTag">
@@ -94,7 +94,7 @@
 
     document.addEventListener("DOMContentLoaded", async function() {
       let posts = []
-      localStorage.setItem('rank', JSON.stringify('commet'));
+      localStorage.setItem('rank', JSON.stringify('comet'));
       let filter = "top"
       let searchPaths = []
       let searchTags = []
@@ -185,11 +185,20 @@
       function showSubmissionArea(patp) {
         let logOut = getById("logOut")
         logOut.style.display = "inline-block";
-        logOut.addEventListener("click", () => {
-          localStorage.removeItem('rank');
-          localStorage.removeItem('challenge');
-          localStorage.removeItem('urbitId');
-          window.location.href = '/~/logout?redirect=/urbitbrowser&eauth';
+        logOut.addEventListener("click", async() => {
+          const resp = await fetch('/urbitbrowser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ logout: true })
+            });
+            if(resp.status === 200){
+              localStorage.setItem('rank', JSON.stringify('comet'));
+              localStorage.removeItem('challenge');
+              localStorage.removeItem('urbitId');
+              window.location.href = '/~/logout?redirect=/urbitbrowser&eauth';
+            }else{
+              console.error('logOut failed')
+            }
         })
 
         const sigilSVG = sigil({
@@ -197,7 +206,7 @@
           size: 15,
           background:'#0b0b07', 
           foreground:'white',
-          detail:'default',
+          detail: 'none',
           space:'none',
         })
 
@@ -399,14 +408,14 @@
         postText.className = "postData"
         if(comments.length === 1){
           postText.innerHTML = 
-          `Submitted by ${submitter} 
+          `${submitter} 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon"> 
           ${comments.length} Comment 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon">  
           ${timestamp}`;
         }else{
           postText.innerHTML = 
-          `Submitted by ${submitter} 
+          `${submitter} 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon"> 
           ${comments.length} Comments 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon">  
@@ -481,20 +490,21 @@
       async function voteOnPath(path, isUpvote) {
         if (Rank() === "comet") {
           logInPopUp()
-        }
-        try {
-          const resp = await fetch('/urbitbrowser', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vote: { path: path, vote: isUpvote } })
-          });
-          if (resp.ok) {
-            console.log('voted')
-          } else {
-            console.error('vote failed')
+        }else{
+          try {
+            const resp = await fetch('/urbitbrowser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ vote: { path: path, vote: isUpvote } })
+            });
+            if (resp.ok) {
+              console.log('voted')
+            } else {
+              console.error('vote failed')
+            }
+          } catch (err) {
+            console.error("Error sending vote:", err);
           }
-        } catch (err) {
-          console.error("Error sending vote:", err);
         }
       }
 
@@ -588,14 +598,13 @@
         renderPosts(sortedPosts, isFetched)
       }
 
-      document.getElementById("searchBy").addEventListener("input", function(){
-        this.style.width = '100px';
-        this.style.width = `${this.scrollWidth}px`;
-      })
       document.getElementById("searchBy").addEventListener("keydown", async () => {
         if (event.key === "Enter") {
           let container = document.getElementById("searchQueryContainer")
           let input = document.getElementById("searchBy")
+          if(input.value === '') {
+            return ;
+          }
           let inputValue = input.value;
           input.value = ''
           document.getElementById('clearAll').classList.add('open');
@@ -663,12 +672,7 @@
             //  else render through filtered array
           }else{
             // UI conditional
-            if(inputValue.startsWith('#')){
-              searchElem.innerHTML = `<div>${inputValue}</div>`
-              inputValue = inputValue.slice(1)
-            }else{
-              searchElem.innerHTML = `<div>#${inputValue}</div>`
-            }
+            searchElem.innerHTML = `<div>${inputValue}</div>`
 
             if(searchTags.includes(inputValue)) return;
 
@@ -788,8 +792,9 @@
 
     function logInPopUp(){
       const logInContainer = document.getElementById("logInContainer")
-      logInPopUp()
-      }
+      logInContainer.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
   </script>
   <script>
     function closeErrorMessage(){
@@ -813,11 +818,27 @@
       input.focus();
 
       input.addEventListener("input", function() {
-        this.style.width = '40px';
-        this.style.width = `${this.scrollWidth}px`;
+        this.style.width = '30px';
+        this.style.width = `${this.scrollWidth - 5}px`;
       });
+
+      input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          if (input.value.trim() !== "") {
+            addTagToForm()
+          }
+          event.preventDefault();
+        }
+      });
+
+
       submitBtn.addEventListener("click", function() {
         if (input.value.trim() !== "") {
+          addTagToForm()
+        }
+      })
+
+        function addTagToForm(){
           button.style.display = "block"
           let tag = document.createElement('div');
           tag.className = "newTag"
@@ -834,10 +855,11 @@
 
           form.style.display = "none"
           input.value = ''
+          input.focus();
+          input.select()
 
           container.appendChild(tag)
         }
-      })
     }
   </script>
 </body>

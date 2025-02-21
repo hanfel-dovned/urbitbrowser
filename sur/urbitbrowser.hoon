@@ -18,15 +18,14 @@
 +$  challenges  (set secret)
 +$  sessions  (map comet=@p id=@p)
 +$  action  
-  $%  
-      [%post =path body=@t tags=(list @t)]
+  $%  [%post =path body=@t tags=(list @t)]
       [%vote =path vote=?]
       [%comment =path text=@t]
       [%auth who=@p =secret address=tape signature=tape]
+      [%logout true=?]
   ==
 +$  update 
-  $%  
-      [%path =path =meta link=@t]
+  $%  [%path =path =meta link=@t]
       [%post link=@t =meta]
   ==
 --

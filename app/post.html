@@ -141,7 +141,7 @@
         let logOut = document.getElementById("logOut")
         logOut.style.display = "inline-block";
         logOut.addEventListener("click", () => {
-          localStorage.removeItem('rank');
+          localStorage.setItem('rank', JSON.stringify('comet'));
           localStorage.removeItem('challenge');
           localStorage.removeItem('urbitId');
           window.location.href = `/~/logout?redirect=${window.location.pathname}&eauth`;
@@ -154,7 +154,7 @@
           size: 15,
           background:'#0b0b07', 
           foreground:'white',
-          detail:'default',
+          detail: 'none',
           space:'none',
         })
 
@@ -191,7 +191,7 @@
         postText.className = "postData"
 
         postText.innerHTML = 
-          `Submitted by ${submitter} 
+          `${submitter} 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon">  
           ${timestamp}`;
 
@@ -219,31 +219,33 @@
         if(body != ''){
           const bodyElement = document.createElement("div")
           bodyElement.className = "commentBody"
-          bodyElement.innerHTML = body
-          containerPost.append(bodyElement)
+          bodyElement.innerHTML = `<div id="commentBodyContainer">body</div>`
+          containerHeader.append(bodyElement)
         }
 
         const voteSection = document.createElement("div")
         voteSection.className = "voteSection"
         const scoreEl = document.createElement("div")
+        scoreEl.classList = "scoreEl"
         scoreEl.innerHTML = score
         const upArrow = document.createElement("div");
         upArrow.className = "voteArrow";
-        upArrow.textContent = "+";
+        upArrow.innerHTML = `<img class="arrIcon" src="/urbitbrowser/fil/lus-icon.svg" alt="lus-icon">`
         upArrow.addEventListener("click", () => voteOnPath(postPath, true));
 
         const downArrow = document.createElement("div");
         downArrow.className = "voteArrow";
-        downArrow.textContent = "-";
+        downArrow.innerHTML = `<img class="arrIcon" src="/urbitbrowser/fil/hep-icon.svg" 
+        style="width: 9px; height: 9px" alt="hep-icon">`
         downArrow.addEventListener("click", () => voteOnPath(postPath, false));
 
         if(votes){
           const isVoted = votes.find(element => element.ship === UrbitId());
           if(isVoted && isVoted.vote === true){
-            upArrow.style.fontWeight = 'bold';
+            upArrow.classList = "voteArrow hovered"
           }
           if(isVoted && isVoted.vote === false){
-            downArrow.style.fontWeight = 'bold';
+            downArrow.classList = "voteArrow hovered"
           }
         }
 
@@ -273,16 +275,17 @@
            
           const sigilSVG = sigil({
             point: comment.who,
-            size: 15,
+            size: 13,
             background:'#0b0b07', 
-            foreground:'white',
-            detail:'default',
+            foreground: '#7D7D79',
+            // detail:'default',
+            detail: 'none',
             space:'none',
           })
           sigilContainer.innerHTML = sigilSVG 
 
           let commentData = document.createElement('div')
-          commentData.className = 'postData'
+          commentData.className = "postData grey"
           commentData.innerHTML = 
           `${comment.who} 
           <img class='separator' src="/urbitbrowser/fil/separator-icon.svg" alt="separartor-icon"> 
@@ -290,6 +293,7 @@
 
           let commentText = document.createElement('div')
           commentText.innerText = comment.what
+          commentText.className = "commentText"
 
           commentHeader.appendChild(sigilContainer)
           commentHeader.appendChild(commentData)

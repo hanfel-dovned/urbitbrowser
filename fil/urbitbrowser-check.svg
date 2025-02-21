@@ -1,4 +1,3 @@
-<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M2.16184 5.42773L4.80713 8.07271" stroke="white" stroke-linecap="round"/>
-<path d="M10.1016 2.78114L4.81011 8.07324" stroke="white" stroke-linecap="round"/>
+<svg width="10" height="7" viewBox="0 0 10 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path id="Union" fill-rule="evenodd" clip-rule="evenodd" d="M3.25268 6.97824C3.15522 6.96102 3.06188 6.91476 2.98659 6.83947L0.341292 4.1945C0.146018 3.99925 0.145998 3.68267 0.341249 3.4874C0.536499 3.29212 0.853082 3.2921 1.04836 3.48735L3.34183 5.78055L8.28098 0.840804C8.47623 0.645531 8.79281 0.645511 8.98808 0.840762C9.18336 1.03601 9.18338 1.35259 8.98813 1.54787L3.69667 6.83997C3.57594 6.96071 3.40882 7.0068 3.25268 6.97824Z" fill="white"/>
 </svg>
