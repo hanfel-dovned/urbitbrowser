@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Urbit Browser</title>
+  <title>Urbit Feed</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
   <link rel="stylesheet" href="/urbitbrowser/style.css">
 </head>
 <body>
   <header class="underlineText">
-    <a id="title" href="/urbitbrowser">Urbit Browser</a>
+    <a id="title" href="/urbitbrowser">Urbit Feed</a>
     <div id="loginButtons">
       <div id="sigilContainer" style="display:none;"></div>
       <button id="logOut" style="display:none;">Log out</button>
@@ -167,9 +167,13 @@
       function renderPost(postUpdate){
 
         post = postUpdate
-        const postPath = path.substring(path.indexOf('/', 1))
+        const pathText = path.substring(path.indexOf('/', 1))
 
-        const { when, votes, score, submitter, body, link, tags, comments } = postUpdate;
+        console.log(postUpdate)
+
+        const { title, when, votes, score, submitter, body, link, tags, comments } = postUpdate;
+
+        console.log(link)
         
         const container = document.getElementById("postContainer")
         
@@ -178,17 +182,47 @@
         const timestamp = timeAgo(when);
         const containerHeader = document.createElement("div")
         containerHeader.id = 'containerHeader'
-        containerHeader.className = 'post'
+        // containerHeader.className = 'post'
         const containerPost = document.createElement("div")
         containerPost.id = 'containerPost'
         containerPost.className = 'postContent'
-        const containerPostHTML = 
-        `<a class="postTitle" href=${link}>${postPath.slice(1)}</a>`
+
+        const postTitle = document.createElement("div")
+        postTitle.id = "postTitle"
+        postTitle.className = "postTitle";
+        console.log(title)
+
+        const titleText = document.createElement("div")
+        titleText.id = "titleText"
+        titleText.innerText = title
+
+        const urlIcon = document.createElement("a")
+        urlIcon.id = "urlImgContainer"
+        urlIcon.href = link
+        urlIcon.innerHTML = `<img class="arrIcon" src="/urbitbrowser/fil/url-icon.svg" alt="url-icon">`
+
+        const pathContainer = document.createElement("a")
+        pathContainer.id = 'pathContainer'
+        pathContainer.href = link
+        pathContainer.innerText = pathText.slice(1)
+
+        postTitle.appendChild(titleText)
+        postTitle.appendChild(urlIcon)
+        postTitle.appendChild(pathContainer)
+
+        const editTitleForm = document.createElement("div")
+        editTitleForm.style.display = "none"
+        editTitleForm.id =  "editTitle" 
+
+        const titleInput = document.createElement("input")
+        titleInput.placeholder = "Title"
+        titleInput.value = title
+        editTitleForm.appendChild(titleInput)
 
         const postInfo = document.createElement("div")
         postInfo.className = "postInfo";
         const postText = document.createElement("div")
-        postText.className = "postData"
+        postText.className = "postData";
 
         postText.innerHTML = 
           `${submitter} 
@@ -211,16 +245,50 @@
           tagsContainer.appendChild(tagElement)
         })
 
+        containerPost.appendChild(postTitle)
+        containerPost.appendChild(editTitleForm)
+        // containerPost.appendChild(postPath)
         postInfo.appendChild(postText)
         postInfo.appendChild(tagsContainer);
-        containerPost.innerHTML = containerPostHTML
+        // containerPost.innerHTML = containerPostHTML
         containerPost.appendChild(postInfo)
         
         if(body != ''){
           const bodyElement = document.createElement("div")
+          bodyElement.id = 'bodyPost'
           bodyElement.className = "commentBody"
-          bodyElement.innerHTML = `<div id="commentBodyContainer">body</div>`
+          bodyElement.innerHTML = `<div id="commentBodyContainer">${body}</div>`
           containerHeader.append(bodyElement)
+        }
+        const bodyInput = document.createElement("textarea")
+        bodyInput.className = "commentBody"
+        bodyInput.placeholder = "Body"
+        bodyInput.value = body
+        bodyInput.style.display = "none"
+        containerHeader.append(bodyInput)
+
+        const withoutFirstSlash = pathText.startsWith('/') ? pathText.slice(1) : pathText;
+        console.log(pathText)
+        console.log(withoutFirstSlash)
+        const shipName = withoutFirstSlash.split('/')[0];
+        console.log(shipName)
+
+        if(UrbitId() === shipName){
+          const editButton = document.createElement("button")
+          editButton.id = "edit"
+          editButton.innerHTML = `Edit`
+          postTitle.appendChild(editButton)
+
+          editButton.addEventListener("click", () => {
+            postTitle.style.display = "none"
+            editTitleForm.style.display = "flex"
+
+            if(body != ''){
+              const bodyElement = document.getElementById('bodyPost')
+              bodyElement.style.display = "none"
+            }
+            bodyInput.style.display = "flex"
+          })
         }
 
         const voteSection = document.createElement("div")

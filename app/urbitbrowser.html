@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Urbit Browser</title>
+  <title>Urbit Feed</title>
   <script src="https://unpkg.com/@urbit/http-api"></script>
   <link rel="stylesheet" type="text/css" href="/urbitbrowser/style.css"/>
 </head>
 <body>
   <header class="underlineText">
-    <a id="title" href="/urbitbrowser">Urbit Browser</a>
+    <a id="title" href="/urbitbrowser">Urbit Feed</a>
     <div id="loginButtons">
       <div id="sigilContainer" style="display:none;"></div>
       <button id="logOut" style="display:none;">Log out</button>
@@ -37,18 +37,18 @@
     </div>
   
     <div id="submitSection">
-      <!-- <h2>Create post</h2> -->
-      <input type="text" id="linkInput" placeholder="~sampel-palnet/path" required="true">
+      <input id="pathInput" type="text" required="true">
+      <input type="text" id="titleInput" placeholder="Title" required="true">
       <div id="submitSectionTagPart">
         <div id="tagsInputContainer">
-        <button type="button" id="addTags" onclick="addInput()" class="buttonPadding">Add Tags <img class="arrIcon" src="/urbitbrowser/fil/x-icon.svg" alt="add-icon"></button>
-        <div id="newTagForm" style="display: none;">
-          <input id="tagsInput" placeholder="#tag" type="text"/>
-          <button id="submitTag">
-            <img src="/urbitbrowser/fil/check-icon.svg" alt="check-icon">
-          </button>
+          <button type="button" id="addTags" onclick="addInput()" class="buttonPadding">Add Tags <img class="arrIcon" src="/urbitbrowser/fil/x-icon.svg" alt="add-icon"></button>
+          <div id="newTagForm" style="display: none;">
+            <input id="tagsInput" placeholder="#tag" type="text"/>
+            <button id="submitTag">
+              <img src="/urbitbrowser/fil/check-icon.svg" alt="check-icon">
+            </button>
+          </div>
         </div>
-      </div>
       </div>
       <textarea type="text" id="bodyInput" placeholder="Body"></textarea>
       <div id="submitButtonContainer">
@@ -59,8 +59,6 @@
     </div>
   
     <div id="filters">
-      <!-- <p class="underlineText">Filters</p> -->
-
       <div id="filterContainer">
         <div id="sortFilter">
           <button id="selectTrigger" value="">
@@ -221,26 +219,50 @@
         submitSection.style.flexDirection = "column"
         submitSection.style.gap = "5px"
 
+        const inputPath = getById("pathInput")
+        inputPath.placeholder = `${patp}/path`
+        inputPath.value = `${patp}/`
+
 
         const submitBtn = getById("submitButton")
         submitBtn.addEventListener("click", async () => {
-          let linkValue = getById("linkInput").value.trim();
+          let linkValue = getById("pathInput").value.trim();
           const errElement = getById("errorMessage")
-          const oldErrText = getById('errorText');
+          const oldErrText = getById("errorText");
 
-          if (!linkValue) return;
+          if (!linkValue){
+            errElement.style.display = "flex";
+            if (oldErrText) {
+              oldErrText.remove();
+            }
+            const errText = createErrorMessage("Path field is required.")
+            errElement.appendChild(errText);
+            return
+          }
           if (!linkValue.startsWith('/')) {
             linkValue = '/' + linkValue;
           }
           const validPath = validPatp(linkValue)
+          console.log(linkValue)
 
           if (!validPath) {
             errElement.style.display = "flex";
             if (oldErrText) {
               oldErrText.remove();
             }
-            const errText = createDiv('errorText')
-            errText.innerHTML = "The provided @p in the path is invalid."
+            const errText = createErrorMessage("Provided @p in the path is invalid.")
+            errElement.appendChild(errText);
+            return
+          }
+
+          const title = document.getElementById("titleInput");
+
+          if(!title.value){
+            errElement.style.display = "flex";
+            if (oldErrText) {
+              oldErrText.remove();
+            }
+            const errText = createErrorMessage("Title is required.")
             errElement.appendChild(errText);
             return
           }
@@ -253,18 +275,33 @@
 
           //  POST req to create a new post
           try {
-            const resp = await fetch('/urbitbrowser', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ post: { path: linkValue, body: bodyInput.value, tags: tagsArray } })
-            });
-            
-            if(resp.status === 200){
-              // clearing up form values
-              if (oldErrText) {
+            if (oldErrText) {
               errElement.style.display = "none";
               oldErrText.remove();
             }
+
+            const spinner = createDiv('spinner')
+            errElement.style.display = "flex";
+            errElement.classList = "end";
+            spinner.classList = "spinner";
+            errElement.appendChild(spinner)
+
+            const timer = setTimeout(() => {
+              errElement.classList = "start";
+              errElement.innerHTML = '';
+              const errText = createErrorMessage(`Your post been submitted but ${linkValue} is not responding. Check back later.`)
+              errElement.appendChild(errText)
+            }, 30000);
+
+            const resp = await fetch('/urbitbrowser', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ post: { title: titleInput.value, path: linkValue, body: bodyInput.value, tags: tagsArray } })
+            });
+            
+            if(resp.status === 200){
+              clearTimeout(timer);
+              closeErrorMessage()
 
               document.getElementById('linkInput').value =''
               const tags = document.querySelectorAll('.tagsInput');
@@ -272,31 +309,32 @@
                 tag.remove();
               });
               bodyInput.value=''
+
             }else if (resp.status === 206) {
+              clearTimeout(timer);
+              closeErrorMessage()
               //  handling err if path already been posted 
 
               const data = await resp.text();
 
               errElement.style.display = "flex";
-              if (oldErrText) {
-                oldErrText.remove();
-              }
-              const postLink = createDiv('postLink')
-              postLink.innerHTML = `
+              errElement.classList = "start";
+              const errText = createErrorMessage(`
               <a href="./urbitbrowser/post${linkValue}" style="color: red;">${data}</a>
-              `
-              errElement.appendChild(postLink)
-            }else if (resp.status === 400 ) {
+              `)
+              errElement.appendChild(errText)
+
+            }else if (resp.status == 400 || resp.status == 405 || resp.status == 409){
+              clearTimeout(timer);
+              closeErrorMessage()
               const data = await resp.text();
 
               errElement.style.display = "flex";
-              if (oldErrText) {
-                oldErrText.remove();
-              }
-              const errText = createDiv('errorText')
-              errText.innerHTML = data
+              errElement.classList = "start";
+              const errText = createErrorMessage(data)
               errElement.appendChild(errText);
-            } else {
+
+            }else {
               console.error("Submission failed");
             }
           } catch (error) {
@@ -343,7 +381,7 @@
   
         const container = document.getElementById("postsContainer");
 
-        const { path, when, votes, score, submitter, tags, comments, link } = post;
+        const { title, path, when, votes, score, submitter, tags, comments, link } = post;
   
         const postEl = createDiv('')
         postEl.className = "post";
@@ -390,13 +428,18 @@
   
         const postContent = createDiv('')
         postContent.className = "postContent";
-        const postTitle = document.createElement("a");
-  
+
+        const postTitle = createDiv('')
         postTitle.className = "postTitle";
-        postTitle.textContent = path.slice(1);
-        postTitle.href = link || "#";
-        postTitle.target = "_blank";
-        postTitle.addEventListener("click", (event) =>
+        postTitle.innerText = title
+
+
+        const postPath = document.createElement("a");
+        postPath.className = "postPath";
+        postPath.textContent = path.slice(1);
+        postPath.href = link || "#";
+        postPath.target = "_blank";
+        postPath.addEventListener("click", (event) =>
         event.stopPropagation()
       )
   
@@ -456,6 +499,7 @@
         postInfo.appendChild(tagsContainer);
         
         postContent.appendChild(postTitle);
+        postContent.appendChild(postPath);
         postContent.appendChild(postInfo);
   
         postEl.appendChild(voteSection);
@@ -797,11 +841,18 @@
     }
   </script>
   <script>
+    function createErrorMessage(msg){
+      const errText = document.createElement('div')
+      errText.id = 'errorText'
+      errText.innerHTML = msg
+      return errText
+    }
+
     function closeErrorMessage(){
       const errElement = document.getElementById("errorMessage")
       errElement.style.display = "none";
-      const errText = document.getElementById("errorText")
-      errElement.removeChild(errText)
+      // const errText = document.getElementById("errorText")
+      errElement.innerHTML = ''
     }
 
     function addInput() {

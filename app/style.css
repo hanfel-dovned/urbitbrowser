@@ -94,7 +94,9 @@ textarea{
   height: 120px;
 }
 input:focus,
-textarea:focus{
+textarea:focus,
+#editTitle input:focus,
+textarea.commentBody:focus{
   border: 1px solid #61615D;
   outline: none;
 }
@@ -157,8 +159,16 @@ h2{
 #errorMessage{
   display: none;
   color: red;
-  padding-left: 10px;
+  /* padding-left: 10px; */
+  padding-right: 10px;
   text-decoration: none;
+  width: 100%;
+}
+#errorMessage.end{
+  justify-content: end;
+}
+#errorMessage.start{
+  justify-content: start;
 }
 #errorMessage:hover{
   color: default;
@@ -231,7 +241,7 @@ button#submitTag:hover {
 #submitButton{
   margin-left: auto;
 }
-#linkInput {
+#pathInput {
   flex-grow: 2;
 }
 #filters{
@@ -309,11 +319,13 @@ button#submitTag:hover {
   gap: 10px;
   padding: 0 10px;
 }
-.post, .comment {
+.post, .comment,
+#containerHeader {
   margin-bottom: 10px;
   border-radius: var(--br);
 }
-.post{
+.post,
+#containerHeader{
   background-color: #14140F;
   border: 1px solid var(--bg-);
   cursor: pointer;
@@ -346,6 +358,7 @@ button#submitTag:hover {
   padding: 5px;
 }
 .postContent {
+  padding: 10px 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -354,11 +367,17 @@ button#submitTag:hover {
 .postTitle {
   color: white;
   font-size: var(--fs-large);
+  align-self: flex-start;
+  width: auto;
+}
+.postPath {
+  color: white;
+  font-size: var(--fs-medium);
   text-decoration: none;
   align-self: flex-start;
   width: auto;
 }
-.postTitle:hover {
+.postPath:hover {
   text-decoration: none;
   color: var(--fc-dark);
 }
@@ -461,12 +480,61 @@ button.tag:hover{
   height: 1px;
   background-color: var(--bg-hover);
 }
+.spinner {
+  align-self: center;
+  border: 3px solid var(--fc-dark);
+  border-top: 3px solid var(--fc-grey);
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  animation: spin 2s linear infinite;
+}
+/* Animation to make the spinner rotate */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 /* post.html */
 #containerPost{
-  padding: 10px 0;
+  padding: 10px 10px 10px 0;
 }
 div#containerHeader .voteSection{
   padding:0;
+}
+#postTitle,
+#editTitle{
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+#editTitle input,
+textarea.commentBody{
+  border: 1px solid #14140F;
+}
+textarea.commentBody{
+  height: 100%;
+  margin-bottom: 10px;
+}
+#urlImgContainer{
+  display: flex;
+  align-items: center;
+}
+a#pathContainer {      
+  border-radius: var(--br);
+  background-color: #242421;
+  color: #8F8F8A;
+  text-align: center;
+  font-size: var(--fs-small);
+  font-style: normal;
+  font-weight: 500;
+  padding: 4px;
+}  
+a#pathContainer:hover{
+  color: white
+}
+#edit{
+  margin-left: auto;
 }
 .commentsContainer{
   display: flex;

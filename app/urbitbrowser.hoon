@@ -10,6 +10,7 @@
 /*  lus-icon  %svg  /fil/urbitbrowser-lus/svg
 /*  hep-icon  %svg  /fil/urbitbrowser-hep/svg
 /*  add-tag-icon  %svg  /fil/urbitbrowser-add-tag/svg
+/*  url-icon  %svg  /fil/urbitfeed-url/svg
 /*  urbitserif-italic  %ttf  /fil/urbitserif-italic-vf/ttf
 ::
 |%
@@ -121,10 +122,15 @@
     ~&  >>>  %kick
       %-  emit
       [%give %kick ~[(welp /post post-path)] ~]
+    =/  url  (get-url post-path)
     =/  =meta  (~(got by paths) post-path)
-    =/  link  (get-url post-path)
+    ?~  url 
+      ::  don't have a host URL
+      ~&  >>>  %kick
+      %-  emit 
+      [%give %kick ~[(welp /post post-path)] ~]
     %-  emit
-    [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post link meta])]
+    [%give %fact ~[(welp /post post-path)] %ub-update !>(`update`[%post (need url) meta])]
   ==
 :: 
 ++  poke
@@ -148,7 +154,7 @@
 ::
 ::  Add a new path and remote scry the owner's URL.
 ++  post
-  |=  [=path body=cord tags=(list @t) eyre-id=@ta]
+  |=  [=path title=@t body=cord tags=(list @t) eyre-id=@ta]
   ^+  that
   =+  send=(cury response:schooner eyre-id)
   ?:  =('comet' (get-rank get-id))  
@@ -157,38 +163,90 @@
     response-403 
   :: if path alredy been shared send message back 
   ?.  =((~(get by paths) path) ~)
+    =/  url  (get-url path)
+    ?~  url
+      %-  emil
+      %-  flop  %-  send
+      [409 ~ [%plain "Fetching url for {(trip -.path)}"]]
     %-  emil
     %-  flop  %-  send
     [206 ~ [%plain "{(spud path)} already been published"]]
   ::  ???
   ?@  path  !!
   ::
-  ?~  (slaw %p -.path)
+  =/  patp  (slaw %p -.path)
+  ?~  patp
     %-  emil
     %-  flop  %-  send
     [400 ~ [%plain "{(spud path)} expected to start with valid @p"]]
   ::
-  =/  =meta  [now.bowl ~ 0 get-id body tags ~]
+  ?.  =(src.bowl `@p`u.patp)  
+    %-  emil
+    %-  flop  %-  send 
+    [405 ~ [%plain "Not allowed to post paths that are not hosted from your ship"]]
+  =/  =meta  [title now.bowl ~ 0 get-id body tags ~ |]
   =.  paths
     (~(put by paths) path meta)
   =/  =ship  `@p`(slav %p -.path)
-  ?~  (~(get by links) ship)
+  =/  url  (get-url path)
+  ?~  url
     ::  sending request to eauth to get valid url for ship
-    %-  emil
-    %+  welp 
-      %-  flop  %-  send
-      (ok-post-response path)
-    :~
+    %-  emit
+    :: %+  welp 
+    ::   %-  flop  %-  send
+    ::   (ok-post-response path)
+    :: :~
       :*  %pass  (welp /eauth/[eyre-id]/(scot %p ship) path)
           [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
       ==
-    ==
+    :: ==
   ::  making GET request to url
-  %-  emil
-  %+  welp 
+  :: =/  path-url 
+  ::   %-  crip
+  ::   %+  welp  
+  ::     %-  trip
+  ::     %-  need  url
+  ::   %-  spud  +.path
+  %-  emit
+  :: %+  welp 
+  ::   %-  flop  %-  send
+  ::   (ok-post-response path)
+  (get-req-card eyre-id path (need url))
+::
+++  edit
+  |=  [=path title=@t body=cord tags=(list @t) eyre-id=@ta]
+  ^+  that 
+  =+  send=(cury response:schooner eyre-id)
+  =/  meta  (~(get by paths) path)
+  ?.  (~(has by paths) path)  
+    %-  emil
+    %-  flop  %-  send 
+    [404 ~ [%plain "Not existing path"]]
+  ::
+  ?.  =(src.bowl `@p`(slav %p (snag 0 path)))  
+    ::  not allowed to change title
+    %-  emil
+    %-  flop  %-  send 
+    [405 ~ [%plain "This ship isn't allowed to make changes to this post"]]
+  ::
+  =/  link  (get-url path)
+  ?~  link  
+    %-  emil  
     %-  flop  %-  send
-    (ok-post-response path)
-  ~[(get-req-card eyre-id path)]
+    [409 ~ [%plain "Fetching url for {(trip -.path)}"]]
+  =/  meta  (~(got by paths) path)
+  =.  title.meta  title
+  =.  body.meta   body
+  =.  tags.meta   tags
+  =.  paths  (~(put by paths) path meta)
+  %-  emil
+    %+  welp 
+      %-  flop  %-  send 
+      [200 ~ [%plain "Title change successfully"]]
+    :~
+      [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post (need link) meta])]
+      (update-card path meta (need link))
+    ==
 ::
 ::  Count a user's vote.
 ++  vote
@@ -199,7 +257,9 @@
     %-  emil 
     %-  flop  %-  send
     response-403 
-  =/  link=cord  (get-url path)
+  =/  url  (get-url path)
+  ?~  url   that
+  =/  link  (need url)
   =+  response=(flop (send ok-vote-response))
   ::  sending updated vote count to subscriber
   =/  meta  (~(got by paths) path)
@@ -268,7 +328,11 @@
     %-  emil 
     %-  flop  %-  send
     response-403 
-  =/  link=cord  (get-url path)
+  =/  link  (get-url path)
+  ?~  link
+    %-  emil
+    %-  flop  %-  send 
+    [409 ~ [%plain "Fetching url for {(trip -.path)}"]]
   =/  meta  (~(get by paths) path)
   ?~  meta  that  
   =.  comments.u.meta  
@@ -281,8 +345,8 @@
     %-  flop  %-  send 
     [200 ~ [%plain "comment action was successful"]]
   :~
-    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post link u.meta])]
-    (update-card path u.meta link)
+    [%give %fact ~[(welp /post path)] %ub-update !>(`update`[%post (need link) u.meta])]
+    (update-card path u.meta (need link))
   ==
 ::
 ::  Receive a link as a remote scry response.
@@ -296,7 +360,20 @@
     =/  path  +15:wire
     ?+    sign-arvo  that 
         [%ames %tune *]
-      =/  =roar:ames  (need roar.sign-arvo)
+      ?~  u-roar=roar.sign-arvo   
+        ~&  >>>  'remote scry, %ames return ~'
+        ?~  eyre-id  
+          ::  already in links, but got error on scry 
+          ::  trying again
+          ~&  >>  'trying again in 1h'
+          =.  links  (~(del by links) ship)
+          %-  emit 
+          [%pass (welp /timer/[*@ta] +7:wire) %arvo %b [%wait (add now.bowl ~h1)]]
+        =.  paths  (~(del by paths) path)
+        =+  send=(cury response:schooner eyre-id)
+        %-  emil  %-  flop  %-  send
+        [409 ~ [%plain "Couldn't fetch url for {(trip +14:wire)}"]]
+      =/  =roar:ames  (need u-roar)
       ::  roar is a [dat=[p=/ q=~] syg=~]    
       =/  c=(cask)  (need q.dat.roar)
       ::  c should be a [%cord *]
@@ -308,10 +385,19 @@
         %+  oust  [0 8] 
         %-  flop  (trip eauth-url)
       ~&  >  :-  'got response from remote scry'
-      :-  ship  url
+        :-  ship  url
+      =/  path-url 
+        %-  crip
+        %+  welp  
+          %-  trip  url
+        %-  spud  +.path
       =.  links  (~(put by links) ship url)
-      %-  emit 
-      (get-req-card eyre-id path)
+      ::  add card to behn time to remote scry ship host again
+      %-  emil
+      %+  welp 
+        ::  TODO:  change in production to 1h
+        ~[[%pass (welp /timer/[*@ta] +7:wire) %arvo %b [%wait (add now.bowl ~m5)]]]
+      ~[(get-req-card eyre-id path path-url)]
     ==
     ::  response from GET request to specified URL path
     ::  used to verify the public accessibility of the URL
@@ -324,19 +410,43 @@
         =/  eyre-id  +6.wire
         =+  send=(cury response:schooner eyre-id)
         =/  path  +7.wire
+        ~&  response
+        ~&  >>  :-  %response  status-code.response-header.response
         ?:  =(status-code.response-header.response 200)    
-          =/  =meta  (~(got by paths) path)
           =/  url  (get-url path)
+          ?~  url  that
+          =/  =meta  (~(got by paths) path)
+          =.  accessible.meta  &
+          =.  paths  (~(put by paths) path meta)
           %-  emil
           %+  welp 
             %-  flop  %-  send
             (ok-post-response path)
-          ~[(update-card path meta url)]
+          ~[(update-card path meta (need url))]
         ::  if response anything other than 200 remove from paths
+        ?~  eyre-id
+          ~&  >>>  :-  %lost-public-accesss-to  path
+          ~&  >>>  :-  path  %disabled
+          ::  repeat request to double check if url avaliable 
+          =/  =meta  (~(got by paths) path)
+          =.  accessible.meta  |
+          =.  paths  (~(put by paths) path meta)
+          ::  TODO: send update url isn't avaliable 
+          that
         =.  paths  (~(del by paths) path)
         %-  emil
         %-  flop  %-  send
         [400 ~ [%plain "{(spud path)} provided URL is invalid or not publicly accessible."]]
+      ==
+    ==
+      [%timer @ta @ *]
+    ?+    sign-arvo  that
+        [%behn %wake *]
+      ~&  >  %behn-wake
+      =/  ship  (slav %p +14.wire)
+      %-  emit
+      :*  %pass  (welp /eauth +.wire)
+          [%keen %.n [ship /e/x/(scot %da now.bowl)//eauth/url]]
       ==
     ==
   ==
@@ -357,7 +467,10 @@
     =/  act=action  (dejs-action +.json)
     ?-    -.act
         %post
-      (post path.act body.act tags.act eyre-id)
+      (post path.act title.act body.act tags.act eyre-id)
+    ::
+        %edit 
+      (edit path.act title.act body.act tags.act eyre-id)
     ::
         %vote
       (vote path.act vote.act eyre-id)
@@ -416,7 +529,12 @@
       =/  path  ;;(path +7:site)
       =/  in-paths  (~(get by paths) path)
       %-  emil  %-  flop  %-  send
-      ?~  in-paths  [200 ~ [%redirect '/urbitbrowser']]
+      ?~  in-paths  
+        ~&  >>  %redirect-home
+        [302 ~ [%redirect '/urbitbrowser']]
+      ?~  (get-url path)  
+        ~&  >>  %redirect-home
+        [302 ~ [%redirect '/urbitbrowser']]
       [200 ~ [%html ui-post]]
     ::
         [%urbitbrowser %fil %check-icon ~]
@@ -467,6 +585,13 @@
         eyre-id
       :-  :-  200  ['content-type'^'image/svg+xml']~
       `(as-octs:mimes:html add-tag-icon)
+    ::
+        [%urbitbrowser %fil %url-icon ~]
+      %-  emil  %-  flop
+      %+  give-simple-payload:app:server
+        eyre-id
+      :-  :-  200  ['content-type'^'image/svg+xml']~
+      `(as-octs:mimes:html url-icon)
     ::fonts/UrbitSans
         [%urbitbrowser %fonts %'UrbitSans' %'UrbitSerifItalicVF' ~]
       %-  emil  %-  flop
@@ -486,13 +611,18 @@
       [%patp [%s (scot %p get-id)]]
       :-  %paths
       :-  %a
-      %+  murn
+      %+  turn
+      :: %+  murn
         ~(tap by paths)
       |=  [=path =meta]
       =/  url  (get-url path)
-      ?:  =(url 'https://urbit.org')  ~
-      %-  some
-      (enjs-path path meta url)
+      ::?~  url  ~
+      ?~  url  
+        :: %-  some  
+        (enjs-path path meta 'urbit.org')
+      :: ?.  accessible.meta  ~
+      :: %-  some
+      (enjs-path path meta (need url))
   ==
 ::
 ++  comment-to-obj
@@ -511,7 +641,8 @@
   %.  jon
   %-  of
   :~  
-      [%post (ot ~[path+pa body+so tags+(ar so)])]
+      [%post (ot ~[title+so path+pa body+so tags+(ar so)])]
+      [%edit (ot ~[title+so path+pa body+so tags+(ar so)])]
       [%vote (ot ~[path+pa vote+bo])]
       [%comment (ot ~[path+pa text+so])]
       [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
@@ -520,13 +651,14 @@
 ::
 ++  get-url 
   |=  =path
-  ^-  cord
+  ^-  (unit cord)
   =/  ship  `@p`(slav %p -.path)
-  =/  url  (~(gut by links) ship 'https://urbit.org')
-  ?:  =(url 'https://urbit.org')  url
+  =/  url  (~(get by links) ship)
+  ?~  url   ~
+  %-  some
   %-  crip  %+  welp 
     %-  trip  
-    url  
+    u.url  
   (spud +.path)
   :: (oust [0 1] path)
 ::
@@ -604,9 +736,9 @@
 :: makes GET request to provided url to determine it's public accessibility
 ::
 ++  get-req-card
-  |=  [eyre-id=@ta =path]
+  |=  [eyre-id=@ta =path url=cord]
   ^-  card
-  =/  =request:http  [%'GET' (get-url path) ~ ~]
+  =/  =request:http  [%'GET' url ~ ~]
   =/  =task:iris  [%request request *outbound-config:iris]
   [%pass (welp /http-req/[eyre-id] path) %arvo %i task]
 ::

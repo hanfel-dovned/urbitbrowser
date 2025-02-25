@@ -14,6 +14,7 @@
   %-  pairs:enjs:format
   :~  ?:  =(path ~)  [%path ~]
       [%path (path:enjs:format path)]
+      [%title [%s title]]
       [%when (time:enjs:format when)]
       [%votes [%a (enjs-votes votes)]]
       [%score (numb:enjs:format score)]
